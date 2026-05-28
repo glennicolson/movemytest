@@ -10,6 +10,8 @@ const nextConfig: NextConfig = {
       { protocol: "https", hostname: "**" },
     ],
   },
+  // Skip static generation for dynamic routes that need DB
+  output: "standalone",
 };
 
 export default nextConfig;
