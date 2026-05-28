@@ -100,7 +100,7 @@ export interface AdminReport {
   status: string;
   createdAt: Date | string;
   reporterAccountId: string | null;
-  reporterAccount?: { email: string | null } | null;
+  reporter?: { email: string | null } | null;
   listing?: { currentCentre?: { name: string } | null } | null;
   match?: { id: string } | null;
   responses?: {
@@ -179,6 +179,8 @@ export interface AdminCentre {
   name: string;
   slug: string | null;
   region: string | null;
-  sourceAgency: string | null;
-  sourceLastCheckedAt: Date | string | null;
+  updatedAt: Date | string | null;
 }
+
+export type ListingStatusCount = { status: string; _count: { _all: number } };
+export type MatchStatusCount = { status: string; _count: { _all: number } };

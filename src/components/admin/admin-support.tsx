@@ -31,7 +31,7 @@ export function AdminSupport({ reports }: { reports: Report[] }) {
       (r) =>
         r.reason?.toLowerCase().includes(q) ||
         r.detail?.toLowerCase().includes(q) ||
-        r.reporterAccount?.email?.toLowerCase().includes(q) ||
+        r.reporter?.email?.toLowerCase().includes(q) ||
         r.status?.toLowerCase().includes(q)
     );
   }, [reports, search]);
@@ -77,7 +77,7 @@ export function AdminSupport({ reports }: { reports: Report[] }) {
               <div>
                 <h3 className="font-semibold text-slate-950">{report.reason}</h3>
                 <p className="mt-1 text-sm text-slate-600">
-                  {maskEmail(report.reporterAccount?.email)} · {formatDateTime(report.createdAt)}
+                  {maskEmail(report.reporter?.email)} · {formatDateTime(report.createdAt)}
                 </p>
               </div>
               <StatusPill status={report.status} />

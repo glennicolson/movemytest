@@ -12,10 +12,10 @@ function formatDate(value?: Date | string | null) {
 }
 
 function getFreshnessStatus(centre: Centre) {
-  if (!centre.sourceLastCheckedAt) {
-    return { label: "Never checked", tone: "danger", icon: <AlertTriangle className="h-4 w-4 text-red-500" /> };
+  if (!centre.updatedAt) {
+    return { label: "Unknown", tone: "neutral", icon: <Clock className="h-4 w-4 text-slate-500" /> };
   }
-  const days = (Date.now() - new Date(centre.sourceLastCheckedAt).getTime()) / (1000 * 60 * 60 * 24);
+  const days = (Date.now() - new Date(centre.updatedAt).getTime()) / (1000 * 60 * 60 * 24);
   if (days < 7) {
     return { label: "Fresh", tone: "success", icon: <CheckCircle2 className="h-4 w-4 text-emerald-500" /> };
   }
@@ -42,17 +42,18 @@ export function AdminCentres({ centres }: { centres: Centre[] }) {
   const freshnessStats = useMemo(() => {
     let fresh = 0;
     let stale = 0;
-    let unchecked = 0;
+    let veryStale = 0;
     centres.forEach((c) => {
-      if (!c.sourceLastCheckedAt) {
-        unchecked++;
+      if (!c.updatedAt) {
+        veryStale++;
       } else {
-        const days = (Date.now() - new Date(c.sourceLastCheckedAt).getTime()) / (1000 * 60 * 60 * 24);
+        const days = (Date.now() - new Date(c.updatedAt).getTime()) / (1000 * 60 * 60 * 24);
         if (days < 7) fresh++;
-        else stale++;
+        else if (days < 30) stale++;
+        else veryStale++;
       }
     });
-    return { fresh, stale, unchecked };
+    return { fresh, stale, veryStale };
   }, [centres]);
 
   return (
@@ -71,7 +72,7 @@ export function AdminCentres({ centres }: { centres: Centre[] }) {
         <Card className="border-amber-200 bg-amber-50">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-amber-600">Stale (≥7 days)</p>
+              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-amber-600">Stale (7–30 days)</p>
               <p className="mt-2 text-3xl font-bold text-amber-900">{freshnessStats.stale}</p>
             </div>
             <Clock className="h-6 w-6 text-amber-500" />
@@ -80,8 +81,8 @@ export function AdminCentres({ centres }: { centres: Centre[] }) {
         <Card className="border-red-200 bg-red-50">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-red-600">Never checked</p>
-              <p className="mt-2 text-3xl font-bold text-red-900">{freshnessStats.unchecked}</p>
+              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-red-600">Very stale (&gt;30 days)</p>
+              <p className="mt-2 text-3xl font-bold text-red-900">{freshnessStats.veryStale}</p>
             </div>
             <AlertTriangle className="h-6 w-6 text-red-500" />
           </div>
@@ -110,15 +111,16 @@ export function AdminCentres({ centres }: { centres: Centre[] }) {
             <div key={centre.id} className="rounded-xl border border-slate-200 bg-white p-3">
               <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
                 {freshness.icon}
-                {centre.sourceAgency ?? "DVSA"}
+                Test Centre
               </div>
               <p className="mt-2 text-sm font-semibold leading-6 text-slate-950">{centre.name}</p>
               <p className="text-xs text-slate-600">{centre.region ?? "Unknown region"}</p>
-              <p className="mt-2 text-xs text-slate-500">Last checked: {formatDate(centre.sourceLastCheckedAt)}</p>
+              <p className="mt-2 text-xs text-slate-500">Last updated: {formatDate(centre.updatedAt)}</p>
               <span className={`mt-2 inline-flex rounded-full px-2 py-0.5 text-xs font-semibold ${
                 freshness.tone === "success" ? "bg-emerald-100 text-emerald-800" :
                 freshness.tone === "warning" ? "bg-amber-100 text-amber-800" :
-                "bg-red-100 text-red-800"
+                freshness.tone === "danger" ? "bg-red-100 text-red-800" :
+                "bg-slate-100 text-slate-800"
               }`}>
                 {freshness.label}
               </span>

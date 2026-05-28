@@ -169,7 +169,7 @@ export async function getAdminDashboardData(): Promise<{
       take: 50,
       orderBy: { createdAt: "desc" },
       include: {
-        reporterAccount: { select: { email: true } },
+        reporter: { select: { email: true } },
         listing: {
           select: { currentCentre: { select: { name: true } } },
         },
@@ -246,9 +246,9 @@ export async function getAdminDashboardData(): Promise<{
 
     // Recent centres
     prisma.testCentre.findMany({
-      orderBy: [{ sourceLastCheckedAt: "desc" }],
+      orderBy: [{ updatedAt: "desc" }],
       take: 16,
-      select: { id: true, name: true, slug: true, region: true, sourceAgency: true, sourceLastCheckedAt: true },
+      select: { id: true, name: true, slug: true, region: true, updatedAt: true },
     }),
   ]);
 

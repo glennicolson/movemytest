@@ -580,3 +580,24 @@ enum MfaFactorStatus {
   DISABLED
   REVOKED
 }
+
+// ── Staff / Admin Accounts ──
+
+enum StaffRole {
+  ADMIN
+  MANAGER
+  SUPPORT
+}
+
+model StaffAccount {
+  id           String    @id @default(cuid())
+  email        String    @unique
+  passwordHash String
+  name         String
+  role         StaffRole @default(ADMIN)
+  lastLoginAt  DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@index([role, createdAt])
+}
