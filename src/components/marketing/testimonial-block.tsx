@@ -62,7 +62,7 @@ export async function TestimonialBlock() {
   const reviews = await getVisibleReviews();
   const displayed = reviews.slice(0, 3);
   const averageRating = displayed.length
-    ? Math.round((displayed.reduce((sum, review) => sum + review.rating, 0) / displayed.length) * 10) / 10
+    ? Math.round((displayed.reduce((sum: any, review: any) => sum + review.rating, 0) / displayed.length) * 10) / 10
     : null;
 
   if (displayed.length > 0) {
@@ -80,7 +80,7 @@ export async function TestimonialBlock() {
         </div>
 
         <div className="mt-10 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {displayed.map((review) => (
+          {displayed.map((review: any) => (
             <article key={review.id} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm ring-1 ring-slate-100">
               <div className="flex items-start justify-between gap-3">
                 <div className="flex items-center gap-3">

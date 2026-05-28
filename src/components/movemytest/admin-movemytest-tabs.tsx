@@ -357,7 +357,7 @@ export function AdminMoveMyTestTabs({
     const q = listingSearch.toLowerCase();
     return rawListings.filter(
       (l) =>
-        (l.account?.email ?? l.user?.email)?.toLowerCase().includes(q) ||
+        (l.movemytestAccount?.email ?? l.user?.email)?.toLowerCase().includes(q) ||
         l.currentCentre?.name?.toLowerCase().includes(q) ||
         l.status?.toLowerCase().includes(q),
     );
@@ -381,8 +381,8 @@ export function AdminMoveMyTestTabs({
       (m) =>
         m.listingA?.currentCentre?.name?.toLowerCase().includes(q) ||
         m.listingB?.currentCentre?.name?.toLowerCase().includes(q) ||
-        m.listingA?.account?.email?.toLowerCase().includes(q) ||
-        m.listingB?.account?.email?.toLowerCase().includes(q) ||
+        m.listingA?.movemytestAccount?.email?.toLowerCase().includes(q) ||
+        m.listingB?.movemytestAccount?.email?.toLowerCase().includes(q) ||
         m.status?.toLowerCase().includes(q),
     );
   }, [rawMatches, matchSearch]);
@@ -647,13 +647,13 @@ export function AdminMoveMyTestTabs({
                       <tr key={listing.id} className="border-b align-top last:border-0">
                         <td className="py-4">
                           <p className="font-semibold text-slate-950">
-                            {maskEmail(listing.account?.email ?? listing.user?.email)}
+                            {maskEmail(listing.movemytestAccount?.email ?? listing.user?.email)}
                           </p>
                           <p className="mt-1 text-xs text-slate-500">
-                            {listing.account?.mobileNumber ?? "No mobile"}
+                            {listing.movemytestAccount?.mobileNumber ?? "No mobile"}
                           </p>
                           <p className="mt-1 text-xs font-semibold text-slate-600">
-                            {listing.account?.crmUserId || listing.userId
+                            {listing.movemytestAccount?.crmUserId || listing.userId
                               ? "DTC CRM-linked"
                               : "Standalone MoveMyTest"}
                           </p>
@@ -800,11 +800,11 @@ export function AdminMoveMyTestTabs({
                   <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
                     <InfoTile
                       label="Learner A"
-                      value={`${maskEmail(match.listingA?.account?.email)} · ${formatDateTime(match.listingA?.currentDateTime)}`}
+                      value={`${maskEmail(match.listingA?.movemytestAccount?.email)} · ${formatDateTime(match.listingA?.currentDateTime)}`}
                     />
                     <InfoTile
                       label="Learner B"
-                      value={`${maskEmail(match.listingB?.account?.email)} · ${formatDateTime(match.listingB?.currentDateTime)}`}
+                      value={`${maskEmail(match.listingB?.movemytestAccount?.email)} · ${formatDateTime(match.listingB?.currentDateTime)}`}
                     />
                     <InfoTile
                       label="Call window"
@@ -870,7 +870,7 @@ export function AdminMoveMyTestTabs({
                   </p>
                   {log.listingInstructor?.listing ? (
                     <p className="mt-1 text-slate-600">
-                      Learner {maskEmail(log.listingInstructor.listing.account?.email)} ·{" "}
+                      Learner {maskEmail(log.listingInstructor.listing.movemytestAccount?.email)} ·{" "}
                       {log.listingInstructor.listing.currentCentre?.name}
                     </p>
                   ) : null}
@@ -922,7 +922,7 @@ export function AdminMoveMyTestTabs({
                 return (
                   <InfoTile
                     key={centre.id}
-                    label={centre.sourceAgency ?? "Centre"}
+                    label={"Centre"}
                     value={`${centre.name} · checked ${formatDate(centre.sourceLastCheckedAt)}`}
                     icon={isFresh ? <CheckCircle2 className="h-4 w-4 text-emerald-500" /> : <Clock className="h-4 w-4 text-amber-500" />}
                   />

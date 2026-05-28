@@ -97,7 +97,7 @@ export function getNavIcon(
   title: string
 ): React.ComponentType<LucideProps> | null {
   // Try to match by href slug
-  const slug = href.replace(/^\/, "").replace(/\/$/, "");
+  const slug = href.replace(/^\//, "").replace(/\/$/, "");
   if (slug in iconMap) return iconMap[slug as NavIconKey];
 
   // Fallback: match by title text (case-insensitive, partial)

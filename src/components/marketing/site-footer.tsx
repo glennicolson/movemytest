@@ -70,10 +70,10 @@ export async function SiteFooter() {
   const footerNavItems = await getNavigation("FOOTER");
 
 // Group footer nav: top-level items become section headers, children become links
-  const sections = footerNavItems.map((parent) => ({
+  const sections = footerNavItems.map((parent: any) => ({
     title: parent.label,
     links: parent.children.length
-      ? parent.children.map((child) => ({ title: child.label, href: child.href, openInNewTab: child.openInNewTab }))
+      ? parent.children.map((child: any) => ({ title: child.label, href: child.href, openInNewTab: child.openInNewTab }))
       : [{ title: parent.label, href: parent.href, openInNewTab: parent.openInNewTab }],
   }));
 
@@ -116,11 +116,11 @@ export async function SiteFooter() {
               </a>
             </div>
           </div>
-          {sections.map((section) => (
+          {sections.map((section: any) => (
             <div key={section.title}>
               <h3 className="text-sm font-semibold uppercase tracking-wider text-white">{section.title}</h3>
               <ul className="mt-3 space-y-2">
-                {section.links.map((link) => (
+                {section.links.map((link: any) => (
                   <li key={link.href}>
                     <Link
                       href={link.href as "/"}

@@ -87,13 +87,13 @@ export default async function WhatToExpectPage() {
             <h2 className="text-xl font-semibold text-emerald-950">Your listing is live</h2>
             <p className="mt-1 text-sm leading-6 text-emerald-900">
               Your test swap listing for{" "}
-              <strong>{listing.currentCentre.name}</strong>{" "}
+              <strong>{listing?.currentCentre?.name ?? "your test centre"}</strong>{" "}
               on{" "}
               <strong>
-                {listing.currentDateTime.toLocaleDateString("en-GB", {
+                {listing?.currentDateTime?.toLocaleDateString("en-GB", {
                   dateStyle: "medium",
                   timeZone: "UTC",
-                })}
+                }) ?? "your test date"}
               </strong>{" "}
               has been created successfully.
             </p>

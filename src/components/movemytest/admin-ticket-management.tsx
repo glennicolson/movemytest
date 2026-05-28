@@ -33,7 +33,7 @@ function reporterLabel(report: ReportWithDetails) {
     const detailMatch = report.detail?.match(/From: (.+?) \(ADI/);
     return detailMatch ? detailMatch[1] : (report.mobileNumber ?? "Instructor");
   }
-  return maskEmail(report.reporterMoveMyTestAccount?.email ?? report.reporterMoveMyTestAccount?.email ?? null);
+  return maskEmail(report.reporter?.email ?? null);
 }
 
 function maskEmail(value?: string | null) {
@@ -106,7 +106,7 @@ export function AdminTicketManagement({ reports }: { reports: ReportWithDetails[
                           : "Phone Note"}
                       </span>
                       <span className="text-xs text-slate-500">
-                        {response.user ? `${response.user.firstName} ${response.user.lastName}` : "DTC Support"} ·{" "}
+                        {response.author ? `${response.author.email}` : "MoveMyTest Support"} ·{" "}
                         {formatDateTime(response.createdAt)}
                       </span>
                     </div>

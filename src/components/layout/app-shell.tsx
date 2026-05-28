@@ -6,7 +6,7 @@ import type { NavItem, NavGroup } from "@/types/navigation";
 import { BrandMark } from "@/components/branding/brand-mark";
 import { SignOutForm } from "@/components/forms/sign-out-form";
 import { Badge } from "@/components/ui/badge";
-import { signOutAction } from "@/app/(auth)/actions";
+import { signOutAction } from "../../../app/(auth)/actions";
 import { appConfig } from "@/lib/config/app";
 import type { AppRole } from "@/lib/auth/roles";
 import { CrmBreadcrumbs } from "@/components/crm-breadcrumbs";
