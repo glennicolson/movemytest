@@ -1,0 +1,2041 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                         String                   @id @default(cuid())
+  email                      String                   @unique
+  passwordHash               String?
+  firstName                  String
+  lastName                   String
+  phone                      String?
+  userType                   UserType
+  role                       AppRole
+  status                     AccountStatus            @default(INVITED)
+  branchId                   String?
+  lastLoginAt                DateTime?
+  createdAt                  DateTime                 @default(now())
+  updatedAt                  DateTime                 @updatedAt
+  auditLogs                  AuditLog[]
+  authTokens                 AuthToken[]
+  backupCodes                BackupCode[]
+  authoredBlogPosts          BlogPost[]               @relation("blogPostAuthor")
+  sentCrmEmails              CrmEmailMessage[]        @relation("crmEmailSentBy")
+  ownedCrmThreads            CrmEmailThreadWorkflow[] @relation("crmEmailThreadOwner")
+  documents                  Document[]               @relation("documentUploadedBy")
+  instructorProfile          InstructorProfile?
+  learnerProfile             LearnerProfile?
+  mfaFactors                 MfaFactor[]
+  staffProfile               StaffProfile?
+  testSwapListings           TestSwapListing[]
+  testSwapLearnerAccount     TestSwapLearnerAccount?  @relation("crmUserTestSwapLearnerAccount")
+  sentTestSwapLearnerInvites TestSwapLearnerInvite[]  @relation("testSwapLearnerInvitesSentByUser")
+  testSwapMatchEvents        TestSwapMatchEvent[]
+  testSwapReports            TestSwapReport[]
+  testSwapAdminNotes         TestSwapAdminNote[]
+  testSwapReportResponses    TestSwapReportResponse[]
+  branch                     Branch?                  @relation(fields: [branchId], references: [id])
+  instructorPayoutBatches    InstructorPayoutBatch[]
+  leadNotes                  LeadNote[]
+  createdDiaryEntries        DiaryEntry[]          @relation("diaryCreatedBy")
+  assignedDiaryEntries       DiaryEntry[]          @relation("diaryAssignedTo")
+
+  @@index([branchId], map: "User_branchId_fkey")
+}
+
+model AuthToken {
+  id         String           @id @default(cuid())
+  userId     String
+  purpose    AuthTokenPurpose
+  tokenHash  String           @unique
+  expiresAt  DateTime
+  consumedAt DateTime?
+  createdAt  DateTime         @default(now())
+  updatedAt  DateTime         @updatedAt
+  user       User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, purpose])
+}
+
+model MfaFactor {
+  id                   String          @id @default(cuid())
+  userId               String
+  method               MfaMethod
+  status               MfaFactorStatus @default(PENDING)
+  label                String?
+  isPrimary            Boolean         @default(false)
+  totpSecretEncrypted  String?         @db.Text
+  webauthnCredentialId String?         @unique
+  webauthnPublicKey    String?         @db.LongText
+  webauthnCounter      Int?
+  webauthnTransports   String?
+  createdAt            DateTime        @default(now())
+  activatedAt          DateTime?
+  revokedAt            DateTime?
+  user                 User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, method, status])
+}
+
+model BackupCode {
+  id        String    @id @default(cuid())
+  userId    String
+  codeHash  String    @unique
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, usedAt])
+}
+
+model Branch {
+  id           String              @id @default(cuid())
+  name         String
+  code         String              @unique
+  status       BranchStatus        @default(ACTIVE)
+  phone        String?
+  email        String?
+  addressLine1 String?
+  addressLine2 String?
+  city         String?
+  postcode     String?
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+  instructors  InstructorProfile[]
+  invoices     Invoice[]
+  leads        Lead[]
+  learners     LearnerProfile[]
+  lessons      Lesson[]
+  users        User[]
+}
+
+model StaffProfile {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  title     String?
+  notes     String?  @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model InstructorProfile {
+  id                        String                     @id @default(cuid())
+  userId                    String                     @unique
+  branchId                  String?
+  area                      String?
+  adiNumber                 String?
+  vehicleMake               String?
+  vehicleModel              String?
+  vehicleRegistration       String?
+  bio                       String?                    @db.Text
+  createdAt                 DateTime                   @default(now())
+  updatedAt                 DateTime                   @updatedAt
+  funFact                   String?                    @db.VarChar(280)
+  photoUrl                  String?
+  showOnWebsite             Boolean                    @default(false)
+  specialties               String?
+  teachesAutomatic          Boolean                    @default(false)
+  teachesManual             Boolean                    @default(true)
+  websiteBio                String?                    @db.Text
+  yearsExperience           Int?
+  addressCity               String?
+  addressStreet             String?
+  bankAccountName           String?
+  bankAccountNumber         String?
+  bankSortCode              String?
+  dateJoinedDtc             DateTime?
+  dateOfBirth               DateTime?
+  lastCheckTestDate         DateTime?
+  lastCheckTestGrade        String?
+  licenceNumber             String?
+  postcode                  String?
+  branch                    Branch?                    @relation(fields: [branchId], references: [id])
+  user                      User                       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  serviceAreas              InstructorServiceArea[]
+  unavailabilities          InstructorUnavailability[]
+  availability              InstructorAvailability[]
+  availabilityExceptions      InstructorAvailabilityException[]
+  assignedLearners          LearnerProfile[]
+  lessons                   Lesson[]
+  payoutBatches             InstructorPayoutBatch[]
+  testSwapInstructorAccount TestSwapInstructorAccount?
+  testSwapLearnerInvites    TestSwapLearnerInvite[]
+  learnerGoals              LearnerGoal[]
+  lessonPrep                LessonPrep[]
+
+  @@index([branchId], map: "InstructorProfile_branchId_fkey")
+}
+
+model LearnerProfile {
+  id                        String                 @id @default(cuid())
+  userId                    String                 @unique
+  branchId                  String?
+  assignedInstructorId      String?
+  licenceNumber             String?
+  provisionalExpiry         DateTime?
+  targetTestDate            DateTime?
+  onboardingStatus          String?
+  learnerStatus             LearnerStatus           @default(ACTIVE)
+  balancePence              Int                    @default(0)
+  createdAt                 DateTime               @default(now())
+  updatedAt                 DateTime               @updatedAt
+  addressCity               String?
+  addressStreet             String?
+  dateOfBirth               DateTime?
+  homePhone                 String?
+  licenceHeld               String?
+  postcode                  String?
+  title                     String?
+  paymentMode               LearnerPaymentMode     @default(PAY_AS_YOU_GO)
+  prepayBlockHours          Int?
+  previousDrivingExperience String?
+  eyesightTestDate          DateTime?
+  adminNotes                String?                @db.Text
+  collectionsCase           CollectionsCase?
+  crmEmails                 CrmEmailMessage[]
+  documents                 Document[]             @relation("documentsForLearner")
+  invoices                  Invoice[]
+  instructorPayoutItems     InstructorPayoutItem[]
+  leads                     Lead[]
+  assignedInstructor        InstructorProfile?     @relation(fields: [assignedInstructorId], references: [id])
+  branch                    Branch?                @relation(fields: [branchId], references: [id])
+  user                      User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lessons                   Lesson[]
+  practicalTests            PracticalTest[]
+  prepayBlocks              PrepayBlock[]
+  progressRecordEntries     ProgressRecordEntry[]
+  skillProgress             SkillProgress[]
+  theoryTests               TheoryTest[]
+  learnerGoals              LearnerGoal[]
+  selfAssessments           LearnerSelfAssessment[]
+  lessonPrep                LessonPrep[]
+
+  @@index([assignedInstructorId], map: "LearnerProfile_assignedInstructorId_fkey")
+  @@index([branchId], map: "LearnerProfile_branchId_fkey")
+}
+
+model Lead {
+  id                  String            @id @default(cuid())
+  firstName           String
+  lastName            String
+  email               String?
+  phone               String?
+  status              LeadStatus        @default(NEW)
+  source              String?
+  notes               String?           @db.Text
+  preferredBranchId   String?
+  convertedLearnerId  String?
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
+  title               String?
+  dateOfBirth         String?
+  homePhone           String?
+  addressStreet       String?
+  addressCity         String?
+  postcode            String?
+  licenceHeld         String?
+  theoryTestPassed    String?
+  practicalTestBooked String?
+  practicalTestDetail String?
+  previousExperience  String?
+  daysAvailable       String?
+  specialRequirements String?
+  serviceRequired     String?
+  hearAboutUs         String?
+  crmEmails           CrmEmailMessage[]
+  notesHistory         LeadNote[]
+  convertedLearner    LearnerProfile?   @relation(fields: [convertedLearnerId], references: [id])
+  preferredBranch     Branch?           @relation(fields: [preferredBranchId], references: [id])
+
+  @@index([convertedLearnerId], map: "Lead_convertedLearnerId_fkey")
+  @@index([preferredBranchId], map: "Lead_preferredBranchId_fkey")
+}
+
+model Lesson {
+  id                String                  @id @default(cuid())
+  branchId          String?
+  learnerId         String
+  instructorId      String
+  status            LessonStatus            @default(DRAFT)
+  transmission      TransmissionType        @default(MANUAL)
+  startsAt          DateTime
+  endsAt            DateTime
+  pickupLocation    String?
+  dropoffLocation   String?
+  vehicleRequired   Boolean                 @default(true)
+  learnerNotes      String?
+  internalNotes     String?                 @db.Text
+  attendanceStatus  LessonAttendanceStatus?
+  taughtMinutes     Int?
+  completedAt       DateTime?
+  completionSummary String?
+  createdAt         DateTime                @default(now())
+  updatedAt         DateTime                @updatedAt
+  branch            Branch?                 @relation(fields: [branchId], references: [id])
+  instructor        InstructorProfile       @relation(fields: [instructorId], references: [id])
+  learner           LearnerProfile          @relation(fields: [learnerId], references: [id])
+  lessonNotes       LessonNote[]
+  preTestFor        PracticalTest?
+
+  @@index([branchId], map: "Lesson_branchId_fkey")
+  @@index([instructorId], map: "Lesson_instructorId_fkey")
+  @@index([learnerId], map: "Lesson_learnerId_fkey")
+}
+
+model InstructorUnavailability {
+  id           String            @id @default(cuid())
+  instructorId String
+  startsAt     DateTime
+  endsAt       DateTime
+  reason       String?
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+  instructor   InstructorProfile @relation(fields: [instructorId], references: [id], onDelete: Cascade)
+
+  @@index([instructorId])
+  @@index([startsAt, endsAt])
+}
+
+// ── Instructor Availability (Working Hours) ──
+model InstructorAvailability {
+  id            String   @id @default(cuid())
+  instructorId  String
+  dayOfWeek     Int      // 0=Sunday, 1=Monday, ..., 6=Saturday
+  startTime     String   // "HH:MM" format, e.g. "08:00"
+  endTime       String   // "HH:MM" format, e.g. "18:00"
+  isWorkingDay  Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  instructor    InstructorProfile @relation(fields: [instructorId], references: [id], onDelete: Cascade)
+
+  @@index([instructorId])
+  @@unique([instructorId, dayOfWeek])
+}
+
+// ── Instructor Availability Exception (overrides for specific dates) ──
+model InstructorAvailabilityException {
+  id            String   @id @default(cuid())
+  instructorId  String
+  exceptionDate DateTime @db.Date
+  startTime     String?  // null = off all day
+  endTime       String?  // null = off all day
+  isWorkingDay  Boolean  @default(true)
+  reason        String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  instructor    InstructorProfile @relation(fields: [instructorId], references: [id], onDelete: Cascade)
+
+  @@index([instructorId])
+  @@index([exceptionDate])
+  @@unique([instructorId, exceptionDate])
+}
+
+model LessonNote {
+  id               String   @id @default(cuid())
+  lessonId         String
+  summary          String
+  strengths        String?
+  focusAreas       String?
+  shareWithLearner Boolean  @default(false)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  lesson           Lesson   @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  @@index([lessonId], map: "LessonNote_lessonId_fkey")
+}
+
+model ProgressRecordEntry {
+  id            String                      @id @default(cuid())
+  learnerId     String
+  lessonId      String?
+  date          DateTime
+  hours         Float
+  prepayBlockId String?
+  paymentStatus ProgressRecordPaymentStatus @default(NOT_APPLICABLE)
+  recap         String?
+  introduce     String?
+  comments      String?
+  createdAt     DateTime                    @default(now())
+  updatedAt     DateTime                    @updatedAt
+  paymentMethod ProgressRecordPaymentMethod @default(NOT_PAID)
+  amountPence   Int?
+  payments      Payment[]
+  learner       LearnerProfile              @relation(fields: [learnerId], references: [id], onDelete: Cascade)
+  prepayBlock   PrepayBlock?                @relation(fields: [prepayBlockId], references: [id])
+
+  @@index([learnerId, date])
+  @@index([paymentMethod, paymentStatus])
+  @@index([prepayBlockId], map: "ProgressRecordEntry_prepayBlockId_fkey")
+}
+
+model PrepayBlock {
+  id              String                @id @default(cuid())
+  learnerId       String
+  totalHours      Float
+  hoursUsed       Float                 @default(0)
+  isActive        Boolean               @default(true)
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime              @updatedAt
+  learner         LearnerProfile        @relation(fields: [learnerId], references: [id], onDelete: Cascade)
+  progressEntries ProgressRecordEntry[]
+
+  @@index([learnerId, isActive])
+}
+
+model SkillProgress {
+  id              String                  @id @default(cuid())
+  learnerId       String
+  skillCode       String
+  skillLabel      String
+  level           SkillLevel              @default(NOT_STARTED)
+  confidence      LearnerConfidenceLevel?
+  note            String?                 @db.Text
+  focusNextLesson Boolean                 @default(false)
+  lastAssessedAt  DateTime?
+  updatedAt       DateTime                @updatedAt
+  learner         LearnerProfile          @relation(fields: [learnerId], references: [id], onDelete: Cascade)
+
+  @@unique([learnerId, skillCode])
+  @@index([learnerId, focusNextLesson])
+}
+
+model TheoryTest {
+  id                String           @id @default(cuid())
+  learnerId         String
+  status            TheoryTestStatus @default(NOT_BOOKED)
+  testDate          DateTime?
+  testCentre        String?
+  bookingReference  String?
+  certificateNumber String?
+  score             Int?
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+  learner           LearnerProfile   @relation(fields: [learnerId], references: [id], onDelete: Cascade)
+
+  @@index([learnerId], map: "TheoryTest_learnerId_fkey")
+}
+
+model PracticalTest {
+  id                     String              @id @default(cuid())
+  learnerId              String
+  status                 PracticalTestStatus @default(NOT_BOOKED)
+  testDate               DateTime?
+  testCentre             String?
+  bookingReference       String?
+  testType               String?
+  minorFaults            Int?
+  majorFaults            Int?
+  examinerName           String?
+  resultSummary          String?
+  createdAt              DateTime            @default(now())
+  updatedAt              DateTime            @updatedAt
+  instructorTakingToTest Boolean             @default(false)
+  preTestLessonId        String?             @unique
+  learner                LearnerProfile      @relation(fields: [learnerId], references: [id], onDelete: Cascade)
+  preTestLesson          Lesson?             @relation(fields: [preTestLessonId], references: [id])
+
+  @@index([learnerId], map: "PracticalTest_learnerId_fkey")
+}
+
+model TestCentre {
+  id                  String                 @id @default(cuid())
+  slug                String                 @unique
+  officialName        String
+  displayName         String
+  region              String
+  regionSlug          String
+  country             TestCentreCountry
+  sourceAgency        TestCentreSourceAgency
+  addressLines        Json?
+  postcode            String?
+  latitude            Decimal?               @db.Decimal(9, 6)
+  longitude           Decimal?               @db.Decimal(9, 6)
+  centreType          String                 @default("practical driving test")
+  active              Boolean                @default(true)
+  sourceUrl           String                 @db.Text
+  sourceLastCheckedAt DateTime
+  createdAt           DateTime               @default(now())
+  updatedAt           DateTime               @updatedAt
+  neighboursFrom      TestCentreNeighbour[]  @relation("CentreNeighboursFrom")
+  neighboursTo        TestCentreNeighbour[]  @relation("CentreNeighboursTo")
+  currentListings     TestSwapListing[]      @relation("CurrentTestCentre")
+  originalListings    TestSwapListing[]      @relation("OriginalTestCentre")
+
+  @@index([regionSlug])
+  @@index([country, sourceAgency])
+  @@index([active])
+}
+
+model TestCentreNeighbour {
+  id            String     @id @default(cuid())
+  centreId      String
+  neighbourId   String
+  distanceMiles Decimal?   @db.Decimal(6, 2)
+  rank          Int
+  sourceUrl     String     @db.Text
+  createdAt     DateTime   @default(now())
+  centre        TestCentre @relation("CentreNeighboursFrom", fields: [centreId], references: [id], onDelete: Cascade)
+  neighbour     TestCentre @relation("CentreNeighboursTo", fields: [neighbourId], references: [id], onDelete: Cascade)
+
+  @@unique([centreId, neighbourId])
+  @@index([centreId, rank])
+  @@index([neighbourId])
+}
+
+model TestSwapLearnerAccount {
+  id                            String                           @id @default(cuid())
+  crmUserId                     String?                          @unique
+  email                         String                           @unique
+  passwordHash                  String
+  mobileNumber                  String?
+  status                        TestSwapAccountStatus            @default(ACTIVE)
+  termsAcceptedAt               DateTime
+  privacyAcceptedAt             DateTime
+  officialProcessAcknowledgedAt DateTime
+  mobileContactConsentAt        DateTime?
+  accountSetupCompletedAt       DateTime?
+  marketingConsentAt            DateTime?
+  emailVerifiedAt               DateTime?
+  lastLoginAt                   DateTime?
+  resetToken                    String?
+  resetTokenExpiresAt           DateTime?
+  createdAt                     DateTime                         @default(now())
+  updatedAt                     DateTime                         @updatedAt
+  consents                      TestSwapLearnerConsent[]
+  listings                      TestSwapListing[]
+  matchEvents                   TestSwapMatchEvent[]
+  bookingReferenceSecrets       TestSwapBookingReferenceSecret[]
+  reports                       TestSwapReport[]
+  mfaFactors                    TestSwapLearnerMfaFactor[]
+  backupCodes                   TestSwapLearnerBackupCode[]
+  crmUser                       User?                            @relation("crmUserTestSwapLearnerAccount", fields: [crmUserId], references: [id], onDelete: SetNull, map: "ts_learner_crm_user_fk")
+  invites                       TestSwapLearnerInvite[]
+  notifications                 TestSwapLearnerNotification[]
+
+  @@index([status, createdAt])
+  @@index([crmUserId], map: "ts_learner_crm_user_idx")
+}
+
+model TestSwapLearnerMfaFactor {
+  id                  String                 @id @default(cuid())
+  accountId           String
+  method              MfaMethod
+  status              MfaFactorStatus        @default(PENDING)
+  label               String?
+  isPrimary           Boolean                @default(false)
+  totpSecretEncrypted String?                @db.Text
+  createdAt           DateTime               @default(now())
+  activatedAt         DateTime?
+  revokedAt           DateTime?
+  account             TestSwapLearnerAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  @@index([accountId, method, status], map: "ts_lmfa_account_method_status_idx")
+}
+
+model TestSwapLearnerBackupCode {
+  id        String                 @id @default(cuid())
+  accountId String
+  codeHash  String                 @unique
+  usedAt    DateTime?
+  createdAt DateTime               @default(now())
+  account   TestSwapLearnerAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  @@index([accountId, usedAt], map: "ts_lbackup_account_used_idx")
+}
+
+model TestSwapLearnerInvite {
+  id                           String                     @id @default(cuid())
+  invitedByUserId              String?
+  invitedByInstructorProfileId String?
+  invitedByInstructorAccountId String?
+  claimedByTestSwapAccountId   String?
+  learnerName                  String?
+  email                        String
+  mobileNumber                 String?
+  instructorAdiNumber          String?
+  status                       String                     @default("PENDING")
+  tokenHash                    String?
+  inviteSentAt                 DateTime?
+  inviteError                  String?                    @db.Text
+  claimedAt                    DateTime?
+  createdAt                    DateTime                   @default(now())
+  updatedAt                    DateTime                   @updatedAt
+  invitedByUser                User?                      @relation("testSwapLearnerInvitesSentByUser", fields: [invitedByUserId], references: [id], onDelete: SetNull, map: "ts_linvite_user_fk")
+  invitedByInstructorProfile   InstructorProfile?         @relation(fields: [invitedByInstructorProfileId], references: [id], onDelete: SetNull, map: "ts_linvite_crm_inst_fk")
+  invitedByInstructorAccount   TestSwapInstructorAccount? @relation(fields: [invitedByInstructorAccountId], references: [id], onDelete: SetNull, map: "ts_linvite_ts_inst_fk")
+  claimedByTestSwapAccount     TestSwapLearnerAccount?    @relation(fields: [claimedByTestSwapAccountId], references: [id], onDelete: SetNull, map: "ts_linvite_account_fk")
+
+  @@index([email, status], map: "ts_linvite_email_status_idx")
+  @@index([invitedByUserId, createdAt], map: "ts_linvite_user_created_idx")
+  @@index([invitedByInstructorProfileId, createdAt], map: "ts_linvite_crm_inst_created_idx")
+  @@index([invitedByInstructorAccountId, createdAt], map: "ts_linvite_ts_inst_created_idx")
+  @@index([claimedByTestSwapAccountId], map: "ts_linvite_account_idx")
+}
+
+model TestSwapLearnerConsent {
+  id             String                 @id @default(cuid())
+  accountId      String
+  consentType    String
+  consentVersion String
+  acceptedAt     DateTime               @default(now())
+  ipAddress      String?
+  userAgent      String?                @db.Text
+  account        TestSwapLearnerAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  @@index([accountId, consentType])
+}
+
+model TestSwapListing {
+  id                        String                     @id @default(cuid())
+  userId                    String?
+  testSwapAccountId         String?
+  currentCentreId           String
+  originalCentreId          String?
+  currentDateTime           DateTime
+  bookingReferenceEncrypted String?                    @db.Text
+  bookingReferenceIv        String?
+  bookingReferenceAuthTag   String?
+  testType                  TestSwapTestType
+  hasRemainingChange        Boolean
+  desiredDateFrom           DateTime
+  desiredDateTo             DateTime
+  desiredTimePreference     TestSwapTimePreference     @default(ANY)
+  desiredCentreIds          Json
+  desiredDirection          TestSwapDesiredDirection
+  status                    TestSwapListingStatus      @default(ACTIVE)
+  jurisdiction              TestSwapJurisdiction
+  expiresAt                 DateTime
+  createdAt                 DateTime                   @default(now())
+  updatedAt                 DateTime                   @updatedAt
+  user                      User?                      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  testSwapAccount           TestSwapLearnerAccount?    @relation(fields: [testSwapAccountId], references: [id], onDelete: Cascade)
+  currentCentre             TestCentre                 @relation("CurrentTestCentre", fields: [currentCentreId], references: [id])
+  originalCentre            TestCentre?                @relation("OriginalTestCentre", fields: [originalCentreId], references: [id])
+  listingAMatches           TestSwapMatch[]            @relation("ListingAMatches")
+  listingBMatches           TestSwapMatch[]            @relation("ListingBMatches")
+  instructorDetails         TestSwapListingInstructor?
+  reports                   TestSwapReport[]
+
+  @@index([userId, status])
+  @@index([testSwapAccountId, status])
+  @@index([currentCentreId, status])
+  @@index([jurisdiction, status])
+  @@index([currentDateTime])
+}
+
+model TestSwapInstructorAccount {
+  id                         String                                   @id @default(cuid())
+  crmInstructorProfileId     String?                                  @unique
+  adiNumber                  String                                   @unique
+  firstName                  String
+  lastName                   String
+  email                      String                                   @unique
+  mobileNumber               String?
+  passwordHash               String
+  status                     String                                   @default("ACTIVE")
+  emailVerifiedAt            DateTime?
+  mobileVerifiedAt           DateTime?
+  lastLoginAt                DateTime?
+  resetToken                 String?
+  resetTokenExpiresAt        DateTime?
+  verificationToken          String?
+  verificationTokenExpiresAt DateTime?
+  createdAt                  DateTime                                 @default(now())
+  updatedAt                  DateTime                                 @updatedAt
+  listingLinks               TestSwapListingInstructor[]
+  invites                    TestSwapInstructorInvite[]
+  learnerInvites             TestSwapLearnerInvite[]
+  availabilityDecisions      TestSwapInstructorAvailabilityDecision[]
+  auditLogs                  TestSwapInstructorAuditLog[]
+  mfaFactors                 TestSwapInstructorMfaFactor[]
+  backupCodes                TestSwapInstructorBackupCode[]
+  crmInstructorProfile       InstructorProfile?                       @relation(fields: [crmInstructorProfileId], references: [id], onDelete: SetNull, map: "ts_inst_crm_profile_fk")
+
+  @@index([adiNumber, status])
+  @@index([email, status])
+  @@index([crmInstructorProfileId], map: "ts_inst_crm_profile_idx")
+}
+
+model TestSwapInstructorInvite {
+  id                  String                     @id @default(cuid())
+  listingInstructorId String
+  instructorAccountId String?
+  email               String
+  adiNumber           String
+  tokenHash           String?
+  status              String                     @default("PENDING")
+  inviteSentAt        DateTime?
+  inviteError         String?                    @db.Text
+  createdAt           DateTime                   @default(now())
+  updatedAt           DateTime                   @updatedAt
+  listingInstructor   TestSwapListingInstructor  @relation(fields: [listingInstructorId], references: [id], onDelete: Cascade)
+  instructorAccount   TestSwapInstructorAccount? @relation(fields: [instructorAccountId], references: [id], onDelete: SetNull)
+
+  @@index([email, status])
+  @@index([adiNumber, status])
+  @@index([listingInstructorId])
+}
+
+model TestSwapListingInstructor {
+  id                                  String                                   @id @default(cuid())
+  listingId                           String                                   @unique
+  instructorAccountId                 String?
+  adiNumber                           String?
+  firstName                           String?
+  lastName                            String?
+  email                               String?
+  mobileNumber                        String?
+  learnerConfirmedPermissionAt        DateTime?
+  learnerConfirmedAvailabilityCheckAt DateTime?
+  inviteSentAt                        DateTime?
+  createdAt                           DateTime                                 @default(now())
+  updatedAt                           DateTime                                 @updatedAt
+  listing                             TestSwapListing                          @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  instructorAccount                   TestSwapInstructorAccount?               @relation(fields: [instructorAccountId], references: [id], onDelete: SetNull)
+  invites                             TestSwapInstructorInvite[]
+  availabilityDecisions               TestSwapInstructorAvailabilityDecision[]
+  auditLogs                           TestSwapInstructorAuditLog[]
+
+  @@index([adiNumber])
+  @@index([instructorAccountId])
+  @@index([email])
+}
+
+model TestSwapInstructorAvailabilityDecision {
+  id                  String                               @id @default(cuid())
+  listingInstructorId String
+  instructorAccountId String?
+  matchId             String?
+  slotType            TestSwapInstructorAvailabilitySlot
+  status              TestSwapInstructorAvailabilityStatus
+  note                String?                              @db.Text
+  decidedAt           DateTime                             @default(now())
+  createdAt           DateTime                             @default(now())
+  updatedAt           DateTime                             @updatedAt
+  listingInstructor   TestSwapListingInstructor            @relation(fields: [listingInstructorId], references: [id], onDelete: Cascade, map: "tsi_avail_link_fk")
+  instructorAccount   TestSwapInstructorAccount?           @relation(fields: [instructorAccountId], references: [id], onDelete: SetNull, map: "tsi_avail_account_fk")
+  match               TestSwapMatch?                       @relation(fields: [matchId], references: [id], onDelete: Cascade, map: "tsi_avail_match_fk")
+
+  @@index([listingInstructorId, slotType, decidedAt], map: "tsi_avail_link_slot_decided_idx")
+  @@index([instructorAccountId, decidedAt], map: "tsi_avail_acct_decided_idx")
+  @@index([matchId, slotType, decidedAt], map: "tsi_avail_match_slot_decided_idx")
+  @@index([status], map: "tsi_avail_status_idx")
+}
+
+model TestSwapInstructorAuditLog {
+  id                  String                     @id @default(cuid())
+  instructorAccountId String?
+  listingInstructorId String?
+  matchId             String?
+  action              String
+  detail              Json?
+  createdAt           DateTime                   @default(now())
+  instructorAccount   TestSwapInstructorAccount? @relation(fields: [instructorAccountId], references: [id], onDelete: SetNull, map: "tsi_audit_account_fk")
+  listingInstructor   TestSwapListingInstructor? @relation(fields: [listingInstructorId], references: [id], onDelete: SetNull, map: "tsi_audit_link_fk")
+  match               TestSwapMatch?             @relation(fields: [matchId], references: [id], onDelete: SetNull, map: "tsi_audit_match_fk")
+
+  @@index([instructorAccountId, createdAt], map: "tsi_audit_acct_created_idx")
+  @@index([listingInstructorId, createdAt], map: "tsi_audit_link_created_idx")
+  @@index([matchId, createdAt], map: "tsi_audit_match_created_idx")
+  @@index([action], map: "tsi_audit_action_idx")
+}
+
+model TestSwapMatch {
+  id                                  String                                   @id @default(cuid())
+  listingAId                          String
+  listingBId                          String
+  status                              TestSwapMatchStatus                      @default(PROPOSED)
+  score                               Int                                      @default(0)
+  qualitySummary                      String?                                  @db.Text
+  ineligibleReasons                   Json?
+  learnerAAcceptedAt                  DateTime?
+  learnerBAcceptedAt                  DateTime?
+  bothAcceptedAt                      DateTime?
+  learnerABookingReferenceConfirmedAt DateTime?
+  learnerBBookingReferenceConfirmedAt DateTime?
+  learnerADvsaCallerAt                DateTime?
+  learnerBDvsaCallerAt                DateTime?
+  callWindowStartedAt                 DateTime?
+  callWindowExpiresAt                 DateTime?
+  learnerACompletedAt                 DateTime?
+  learnerBCompletedAt                 DateTime?
+  cancelledAt                         DateTime?
+  cancelReason                        String?                                  @db.Text
+  archivedAt                          DateTime?
+  instructorConfirmedByLearnerAtA     DateTime?
+  instructorConfirmedByLearnerAtB     DateTime?
+  expiresAt                           DateTime
+  completedAt                         DateTime?
+  createdAt                           DateTime                                 @default(now())
+  updatedAt                           DateTime                                 @updatedAt
+  listingA                            TestSwapListing                          @relation("ListingAMatches", fields: [listingAId], references: [id], onDelete: Cascade)
+  listingB                            TestSwapListing                          @relation("ListingBMatches", fields: [listingBId], references: [id], onDelete: Cascade)
+  events                              TestSwapMatchEvent[]
+  secrets                             TestSwapBookingReferenceSecret[]
+  reports                             TestSwapReport[]
+  instructorAvailabilityDecisions     TestSwapInstructorAvailabilityDecision[]
+  instructorAuditLogs                 TestSwapInstructorAuditLog[]
+
+  @@unique([listingAId, listingBId])
+  @@index([status])
+  @@index([expiresAt])
+}
+
+model TestSwapMatchEvent {
+  id                String                  @id @default(cuid())
+  matchId           String
+  userId            String?
+  testSwapAccountId String?
+  eventType         String
+  detail            Json?
+  createdAt         DateTime                @default(now())
+  match             TestSwapMatch           @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  user              User?                   @relation(fields: [userId], references: [id])
+  testSwapAccount   TestSwapLearnerAccount? @relation(fields: [testSwapAccountId], references: [id])
+
+  @@index([matchId, createdAt])
+  @@index([userId])
+  @@index([testSwapAccountId])
+  @@index([eventType])
+}
+
+model TestSwapBookingReferenceSecret {
+  id                     String                  @id @default(cuid())
+  matchId                String
+  ownerUserId            String?
+  ownerTestSwapAccountId String?
+  encryptedValue         String                  @db.Text
+  iv                     String
+  authTag                String
+  revealedAt             DateTime?
+  expiresAt              DateTime
+  deletedAt              DateTime?
+  createdAt              DateTime                @default(now())
+  match                  TestSwapMatch           @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  ownerTestSwapAccount   TestSwapLearnerAccount? @relation(fields: [ownerTestSwapAccountId], references: [id])
+
+  @@index([matchId, ownerUserId])
+  @@index([matchId, ownerTestSwapAccountId])
+  @@index([expiresAt])
+  @@index([deletedAt])
+}
+
+model TestSwapReport {
+  id                        String                   @id @default(cuid())
+  listingId                 String?
+  matchId                   String?
+  reporterUserId            String?
+  reporterTestSwapAccountId String?
+  reason                    String
+  detail                    String?                  @db.Text
+  status                    String                   @default("OPEN")
+  mobileNumber              String?
+  closedAt                  DateTime?
+  closedByUserId            String?
+  closedReason              String?
+  createdAt                 DateTime                 @default(now())
+  updatedAt                 DateTime                 @updatedAt
+  listing                   TestSwapListing?         @relation(fields: [listingId], references: [id], onDelete: SetNull)
+  match                     TestSwapMatch?           @relation(fields: [matchId], references: [id], onDelete: SetNull)
+  reporter                  User?                    @relation(fields: [reporterUserId], references: [id], onDelete: Cascade)
+  reporterTestSwapAccount   TestSwapLearnerAccount?  @relation(fields: [reporterTestSwapAccountId], references: [id], onDelete: Cascade)
+  responses                 TestSwapReportResponse[]
+
+  @@index([status, createdAt])
+  @@index([listingId])
+  @@index([matchId])
+  @@index([reporterUserId])
+  @@index([reporterTestSwapAccountId])
+}
+
+model TestSwapReportResponse {
+  id           String                  @id @default(cuid())
+  reportId     String
+  authorUserId String?
+  message      String                  @db.Text
+  channel      TestSwapResponseChannel @default(PORTAL_REPLY)
+  createdAt    DateTime                @default(now())
+  report       TestSwapReport          @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  author       User?                   @relation(fields: [authorUserId], references: [id], onDelete: SetNull)
+
+  @@index([reportId, createdAt])
+  @@index([authorUserId])
+}
+
+enum TestSwapResponseChannel {
+  PORTAL_REPLY
+  EMAIL_SENT
+  PHONE_CALL_NOTE
+}
+
+model TestSwapLearnerNotification {
+  id                String                 @id @default(cuid())
+  learnerAccountId  String
+  title             String
+  message           String                 @db.Text
+  readAt            DateTime?
+  relatedReportId   String?
+  relatedResponseId String?
+  createdAt         DateTime               @default(now())
+  learnerAccount    TestSwapLearnerAccount @relation(fields: [learnerAccountId], references: [id], onDelete: Cascade)
+
+  @@index([learnerAccountId, readAt])
+  @@index([createdAt])
+  @@index([relatedReportId])
+}
+
+model TestSwapEmailQueue {
+  id            String    @id @default(cuid())
+  matchId       String
+  kind          String
+  recipient     String
+  recipientRole String    @default("LEARNER")
+  scheduledFor  DateTime
+  sentAt        DateTime?
+  error         String?   @db.Text
+  retryCount    Int       @default(0)
+  maxRetries    Int       @default(3)
+  status        String    @default("PENDING")
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([status, scheduledFor])
+  @@index([matchId])
+  @@index([matchId, kind, recipient])
+}
+
+model TestSwapAdminNote {
+  id           String   @id @default(cuid())
+  entityType   String
+  entityId     String
+  authorUserId String
+  note         String   @db.Text
+  createdAt    DateTime @default(now())
+  author       User     @relation(fields: [authorUserId], references: [id], onDelete: Cascade)
+
+  @@index([entityType, entityId])
+  @@index([authorUserId])
+}
+
+model Invoice {
+  id            String         @id @default(cuid())
+  learnerId     String
+  branchId      String?
+  invoiceNumber String         @unique
+  status        InvoiceStatus  @default(DRAFT)
+  issuedAt      DateTime?
+  dueAt         DateTime?
+  subtotalPence Int            @default(0)
+  taxPence      Int            @default(0)
+  totalPence    Int            @default(0)
+  balancePence  Int            @default(0)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  invoiceType   InvoiceType    @default(LESSON)
+  branch        Branch?        @relation(fields: [branchId], references: [id])
+  learner       LearnerProfile @relation(fields: [learnerId], references: [id], onDelete: Cascade)
+  lines         InvoiceLine[]
+  payments      Payment[]
+
+  @@index([branchId], map: "Invoice_branchId_fkey")
+  @@index([learnerId], map: "Invoice_learnerId_fkey")
+}
+
+model InvoiceLine {
+  id              String   @id @default(cuid())
+  invoiceId       String
+  description     String   @db.Text
+  quantity        Int      @default(1)
+  unitAmountPence Int
+  lineTotalPence  Int
+  productId       String?
+  createdAt       DateTime @default(now())
+  invoice         Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  product         Product? @relation(fields: [productId], references: [id])
+
+  @@index([invoiceId], map: "InvoiceLine_invoiceId_fkey")
+  @@index([productId], map: "InvoiceLine_productId_fkey")
+}
+
+model Product {
+  id           String          @id @default(cuid())
+  code         String          @unique
+  name         String
+  category     ProductCategory @default(LESSON)
+  isActive     Boolean         @default(true)
+  sortOrder    Int             @default(0)
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+  invoiceLines InvoiceLine[]
+}
+
+model Payment {
+  id                    String                 @id @default(cuid())
+  invoiceId             String?
+  status                PaymentStatus          @default(PENDING)
+  provider              PaymentProvider        @default(OTHER)
+  providerReference     String?
+  amountPence           Int
+  receivedAt            DateTime?
+  createdAt             DateTime               @default(now())
+  updatedAt             DateTime               @updatedAt
+  progressRecordEntryId String?
+  invoice               Invoice?               @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  progressRecordEntry   ProgressRecordEntry?   @relation(fields: [progressRecordEntryId], references: [id])
+  instructorPayoutItems InstructorPayoutItem[]
+
+  @@index([invoiceId])
+  @@index([progressRecordEntryId])
+}
+
+model InstructorPayoutBatch {
+  id               String                 @id @default(cuid())
+  instructorId     String
+  paidByUserId     String?
+  status           InstructorPayoutStatus @default(PAID)
+  totalPence       Int                    @default(0)
+  paymentMethod    InstructorPayoutMethod @default(BANK_TRANSFER)
+  paymentReference String?
+  paidAt           DateTime?
+  notes            String?                @db.Text
+  createdAt        DateTime               @default(now())
+  updatedAt        DateTime               @updatedAt
+  instructor       InstructorProfile      @relation(fields: [instructorId], references: [id], onDelete: Cascade)
+  paidBy           User?                  @relation(fields: [paidByUserId], references: [id])
+  items            InstructorPayoutItem[]
+
+  @@index([instructorId, status])
+  @@index([paidAt])
+}
+
+model InstructorPayoutItem {
+  id               String                @id @default(cuid())
+  payoutBatchId    String
+  paymentId        String                @unique
+  learnerId        String
+  amountPence      Int
+  sourceReceivedAt DateTime?
+  createdAt        DateTime              @default(now())
+  payoutBatch      InstructorPayoutBatch @relation(fields: [payoutBatchId], references: [id], onDelete: Cascade)
+  payment          Payment               @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+  learner          LearnerProfile        @relation(fields: [learnerId], references: [id], onDelete: Cascade)
+
+  @@index([payoutBatchId])
+  @@index([learnerId])
+  @@index([sourceReceivedAt])
+}
+
+model CollectionsCase {
+  id             String                @id @default(cuid())
+  learnerId      String                @unique
+  ownerName      String?
+  nextFollowUpAt DateTime?
+  status         CollectionsCaseStatus @default(ACTIVE)
+  note           String?
+  lastActionType String?
+  lastActionAt   DateTime?
+  createdAt      DateTime              @default(now())
+  updatedAt      DateTime              @updatedAt
+  learner        LearnerProfile        @relation(fields: [learnerId], references: [id], onDelete: Cascade)
+}
+
+model Document {
+  id            String                @id @default(cuid())
+  learnerId     String?
+  uploadedById  String?
+  title         String
+  category      DocumentCategory      @default(OTHER)
+  workflowState DocumentWorkflowState @default(RECEIVED)
+  fileName      String
+  storagePath   String
+  mimeType      String?
+  audience      DocumentAudience      @default(INTERNAL)
+  notes         String?
+  requestedAt   DateTime?
+  dueAt         DateTime?
+  reviewedAt    DateTime?
+  expiresAt     DateTime?
+  createdAt     DateTime              @default(now())
+  updatedAt     DateTime              @updatedAt
+  learner       LearnerProfile?       @relation("documentsForLearner", fields: [learnerId], references: [id])
+  uploadedBy    User?                 @relation("documentUploadedBy", fields: [uploadedById], references: [id])
+
+  @@index([learnerId], map: "Document_learnerId_fkey")
+  @@index([uploadedById], map: "Document_uploadedById_fkey")
+}
+
+model AuditLog {
+  id         String      @id @default(cuid())
+  userId     String?
+  action     AuditAction
+  entityType String
+  entityId   String
+  detail     String?
+  createdAt  DateTime    @default(now())
+  user       User?       @relation(fields: [userId], references: [id])
+
+  @@index([entityType, entityId])
+  @@index([userId], map: "AuditLog_userId_fkey")
+}
+
+model CrmEmailMessage {
+  id              String                 @id @default(cuid())
+  direction       CrmEmailDirection
+  deliveryStatus  CrmEmailDeliveryStatus @default(PENDING)
+  mailbox         String
+  threadKey       String                 @default("subject:(no subject)")
+  subject         String
+  contactEmail    String?
+  fromAddress     String
+  toAddresses     String
+  ccAddresses     String?
+  bccAddresses    String?
+  replyToAddress  String?
+  textBody        String?                @db.Text
+  htmlBody        String?                @db.Text
+  snippet         String?                @db.Text
+  remoteMessageId String?                @unique
+  inReplyTo       String?
+  referenceIds    String?
+  remoteFolder    String?
+  remoteUid       Int?
+  provider        String?
+  providerRef     String?
+  syncError       String?
+  retryCount      Int                    @default(0)
+  lastRetryAt     DateTime?
+  receivedAt      DateTime?
+  sentAt          DateTime?
+  isRead          Boolean                @default(false)
+  learnerId       String?
+  leadId          String?
+  sentByUserId    String?
+  createdAt       DateTime               @default(now())
+  updatedAt       DateTime               @updatedAt
+  attachments     CrmEmailAttachment[]
+  lead            Lead?                  @relation(fields: [leadId], references: [id])
+  learner         LearnerProfile?        @relation(fields: [learnerId], references: [id])
+  sentByUser      User?                  @relation("crmEmailSentBy", fields: [sentByUserId], references: [id])
+
+  @@index([mailbox, threadKey, createdAt])
+  @@index([mailbox, direction, receivedAt])
+  @@index([mailbox, direction, sentAt])
+  @@index([leadId], map: "CrmEmailMessage_leadId_fkey")
+  @@index([learnerId], map: "CrmEmailMessage_learnerId_fkey")
+  @@index([sentByUserId], map: "CrmEmailMessage_sentByUserId_fkey")
+}
+
+model CrmEmailAttachment {
+  id                 String          @id @default(cuid())
+  messageId          String
+  fileName           String
+  mimeType           String?
+  sizeBytes          Int
+  contentId          String?
+  contentDisposition String?
+  storagePath        String
+  createdAt          DateTime        @default(now())
+  message            CrmEmailMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@index([messageId, createdAt])
+}
+
+model BlogPost {
+  id                 String         @id @default(cuid())
+  title              String
+  slug               String         @unique
+  featuredImage      String?
+  authorId           String?
+  authorName         String?
+  publishDate        DateTime?
+  excerpt            String         @db.Text
+  content            String         @db.Text
+  categories         String?        @db.Text
+  tags               String?        @db.Text
+  seoMetaTitle       String?
+  seoMetaDescription String?        @db.Text
+  seoNoIndex         Boolean        @default(false)
+  pin                BlogPostPin    @default(NONE)
+  status             BlogPostStatus @default(DRAFT)
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+  author             User?          @relation("blogPostAuthor", fields: [authorId], references: [id])
+
+  @@index([status, publishDate])
+  @@index([createdAt])
+  @@index([authorId], map: "BlogPost_authorId_fkey")
+}
+
+model GoogleReview {
+  id         String   @id @default(cuid())
+  authorName String
+  rating     Int      @default(5)
+  text       String
+  reviewedAt DateTime
+  source     String   @default("google")
+  visible    Boolean  @default(true)
+  sortOrder  Int      @default(0)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([visible, sortOrder])
+  @@index([reviewedAt])
+}
+
+model FacebookPost {
+  id            String   @id @default(cuid())
+  fbPostId      String   @unique
+  message       String?  @db.Text
+  permalink     String
+  imageUrl      String?  @db.Text
+  createdTime   DateTime
+  likesCount    Int      @default(0)
+  commentsCount Int      @default(0)
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([isActive, createdTime])
+  @@index([createdTime])
+}
+
+model CrmEmailThreadWorkflow {
+  id            String                 @id @default(cuid())
+  mailbox       String
+  threadKey     String                 @unique
+  ownerUserId   String?
+  status        CrmEmailThreadStatus   @default(OPEN)
+  priority      CrmEmailThreadPriority @default(NORMAL)
+  internalNotes String?                @db.Text
+  dueAt         DateTime?
+  reminderAt    DateTime?
+  lastActionAt  DateTime?
+  createdAt     DateTime               @default(now())
+  updatedAt     DateTime               @updatedAt
+  ownerUser     User?                  @relation("crmEmailThreadOwner", fields: [ownerUserId], references: [id])
+
+  @@index([mailbox, status, priority])
+  @@index([ownerUserId, updatedAt])
+  @@index([dueAt, reminderAt])
+}
+
+model MarketingPage {
+  id              String        @id @default(cuid())
+  slug            String        @unique
+  title           String
+  metaTitle       String?
+  metaDescription String?       @db.Text
+  status          PageStatus    @default(DRAFT)
+  isActive        Boolean       @default(true)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  sections        PageSection[]
+
+  @@index([status, isActive])
+  @@index([slug])
+}
+
+model PageSection {
+  id        String        @id @default(cuid())
+  pageId    String
+  page      MarketingPage @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  type      SectionType
+  order     Int           @default(0)
+  settings  Json?
+  content   Json
+  isActive  Boolean       @default(true)
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  @@index([pageId])
+  @@index([pageId, order])
+}
+
+enum SectionType {
+  HERO
+  FEATURES
+  TESTIMONIALS
+  PRICING
+  CTA
+  FAQ
+  TEXT
+  IMAGE
+  CARDS
+  GALLERY
+  EMBED
+}
+
+enum PageStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+model SiteContent {
+  id          String          @id @default(cuid())
+  contentKey  String          @unique
+  page        String
+  value       String          @db.Text
+  contentType SiteContentType @default(TEXT)
+  sortOrder   Int             @default(0)
+  isActive    Boolean         @default(true)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  @@index([page, isActive])
+  @@index([contentKey, isActive])
+}
+
+model SitePageConfig {
+  id                 String    @id @default(cuid())
+  pageKey            String    @unique
+  pageLabel          String
+  isPublished        Boolean   @default(true)
+  seoMetaTitle       String?
+  seoMetaDescription String?   @db.Text
+  seoNoIndex         Boolean   @default(false)
+  customCss          String?
+  lastPublishedAt    DateTime?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  @@index([isPublished])
+}
+
+model NavigationItem {
+  id           String           @id @default(cuid())
+  location     NavLocation
+  label        String
+  href         String
+  parentId     String?
+  sortOrder    Int              @default(0)
+  isActive     Boolean          @default(true)
+  openInNewTab Boolean          @default(false)
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+  description  String?          @db.Text
+  icon         String?
+  parent       NavigationItem?  @relation("NavChildren", fields: [parentId], references: [id])
+  children     NavigationItem[] @relation("NavChildren")
+
+  @@index([location, isActive, sortOrder])
+  @@index([parentId], map: "NavigationItem_parentId_fkey")
+}
+
+model Testimonial {
+  id         String            @id @default(cuid())
+  authorName String
+  role       String?
+  rating     Int               @default(5)
+  text       String            @db.Text
+  source     TestimonialSource @default(MANUAL)
+  externalId String?
+  visible    Boolean           @default(true)
+  sortOrder  Int               @default(0)
+  createdAt  DateTime          @default(now())
+  updatedAt  DateTime          @updatedAt
+
+  @@index([visible, sortOrder])
+}
+
+model PricingTier {
+  id              String         @id @default(cuid())
+  area            String
+  lessonType      LessonTypeName @default(STANDARD)
+  durationMinutes Int            @default(90)
+  price           Decimal        @db.Decimal(10, 2)
+  isActive        Boolean        @default(true)
+  sortOrder       Int            @default(0)
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  @@unique([area, lessonType, durationMinutes])
+  @@index([area, isActive])
+}
+
+model InstructorServiceArea {
+  id            String            @id @default(cuid())
+  instructorId  String
+  serviceAreaId String
+  createdAt     DateTime          @default(now())
+  instructor    InstructorProfile @relation(fields: [instructorId], references: [id], onDelete: Cascade)
+  serviceArea   ServiceArea       @relation(fields: [serviceAreaId], references: [id], onDelete: Cascade)
+
+  @@unique([instructorId, serviceAreaId])
+  @@index([instructorId])
+  @@index([serviceAreaId])
+}
+
+model ServiceArea {
+  id            String                  @id @default(cuid())
+  town          String                  @unique
+  region        String
+  postcodes     String?
+  hasManual     Boolean                 @default(true)
+  hasAutomatic  Boolean                 @default(false)
+  isActive      Boolean                 @default(true)
+  sortOrder     Int                     @default(0)
+  displayDetail String?                 @db.Text
+  createdAt     DateTime                @default(now())
+  updatedAt     DateTime                @updatedAt
+  instructors   InstructorServiceArea[]
+
+  @@index([region, isActive])
+  @@index([isActive, sortOrder])
+}
+
+model FaqItem {
+  id        String   @id @default(cuid())
+  question  String
+  answer    String   @db.Text
+  category  String
+  sortOrder Int      @default(0)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([category, isActive, sortOrder])
+}
+
+model SeoPageAudit {
+  id                  String   @id @default(cuid())
+  url                 String   @unique
+  path                String
+  pageTitle           String?
+  metaDescription     String?  @db.Text
+  h1Text              String?
+  h1Count             Int      @default(0)
+  h2Count             Int      @default(0)
+  imageCount          Int      @default(0)
+  imagesMissingAlt    Int      @default(0)
+  hasCanonical        Boolean  @default(false)
+  canonicalUrl        String?
+  isIndexable         Boolean  @default(true)
+  hasRobotsNoindex    Boolean  @default(false)
+  hasSitemapEntry     Boolean  @default(false)
+  robotsTxtAccessible Boolean?
+  robotsTxtRules      Json?
+  urlQualityScore     Int?
+  slugQualityIssues   Json?
+  pageSpeedScore      Int? // 0-100 performance score
+  pageSpeedIssues     Json? // { loadTimeMs, ttfbMs, contentSizeKb, resourceCount, issues }
+  brokenLinks         Json?
+  seoScore            Int?
+  pageViews30d        Int?
+  avgEngagementTime   Float?   @db.Float
+  bounceRate          Float?   @db.Float
+  lastScannedAt       DateTime @default(now())
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@index([path])
+  @@index([seoScore])
+  @@index([lastScannedAt])
+  @@index([pageViews30d])
+}
+
+model SeoSiteHealth {
+  id                String   @id @default(cuid())
+  robotsTxtPresent  Boolean  @default(false)
+  robotsTxtContent  String?  @db.Text
+  robotsTxtIssues   Json?
+  sitemapXmlPresent Boolean  @default(false)
+  sitemapXmlUrls    Int      @default(0)
+  sitemapXmlIssues  Json?
+  scanId            String?  @unique
+  lastScannedAt     DateTime @default(now())
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+model SeoScanAuditLog {
+  id        String   @id @default(cuid())
+  action    String // "TRIGGER_SCAN", "EXPORT_CSV", "EXPORT_PDF", "VIEW_DASHBOARD"
+  userId    String
+  userEmail String
+  userRole  String
+  metadata  Json? // { pagesScanned, pagesWithIssues, scanId }
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime @default(now())
+
+  @@index([action])
+  @@index([userId])
+  @@index([createdAt])
+}
+
+model SeoScanLog {
+  id              String    @id @default(cuid())
+  startedAt       DateTime  @default(now())
+  completedAt     DateTime?
+  pagesScanned    Int       @default(0)
+  pagesWithIssues Int       @default(0)
+  status          String
+  errorLog        String?   @db.Text
+  triggeredBy     String
+  createdAt       DateTime  @default(now())
+
+  @@index([status])
+  @@index([startedAt])
+}
+
+model GaApiCache {
+  id         String   @id @default(cuid())
+  metricType String
+  dateRange  String
+  data       Json
+  fetchedAt  DateTime @default(now())
+  expiresAt  DateTime
+
+  @@index([metricType, dateRange, expiresAt])
+  @@index([expiresAt])
+}
+
+enum UserType {
+  STAFF
+  INSTRUCTOR
+  LEARNER
+}
+
+enum AppRole {
+  ADMIN
+  MANAGER
+  OFFICE_STAFF
+  TECHNICAL_SUPPORT
+  INSTRUCTOR
+  LEARNER
+}
+
+enum AccountStatus {
+  INVITED
+  ACTIVE
+  SUSPENDED
+  ARCHIVED
+}
+
+enum AuthTokenPurpose {
+  INVITE
+  PASSWORD_RESET
+  LESSON_CONFIRMATION
+}
+
+enum MfaMethod {
+  TOTP
+  WEBAUTHN
+}
+
+enum MfaFactorStatus {
+  PENDING
+  ACTIVE
+  DISABLED
+  REVOKED
+}
+
+enum BranchStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum LeadStatus {
+  NEW
+  CONTACTED
+  QUALIFIED
+  CONVERTED
+  LOST
+}
+
+enum LessonStatus {
+  DRAFT
+  SCHEDULED
+  CONFIRMED
+  COMPLETED
+  CANCELLED
+  NO_SHOW
+}
+
+enum TransmissionType {
+  MANUAL
+  AUTOMATIC
+}
+
+enum LessonAttendanceStatus {
+  ATTENDED
+  PARTIAL
+  LEARNER_LATE
+  LEARNER_NO_SHOW
+  CANCELLED_IN_ADVANCE
+}
+
+enum SkillLevel {
+  NOT_STARTED
+  INTRODUCED
+  HELPED
+  PROMPTED
+  INDEPENDENT
+  REFLECTION
+  DEVELOPING
+  CONSISTENT
+  TEST_READY
+}
+
+enum LearnerConfidenceLevel {
+  LOW
+  BUILDING
+  COMFORTABLE
+  CONFIDENT
+}
+
+enum TheoryTestStatus {
+  NOT_BOOKED
+  BOOKED
+  PASSED
+  FAILED
+  CANCELLED
+}
+
+enum PracticalTestStatus {
+  NOT_BOOKED
+  BOOKED
+  PASSED
+  FAILED
+  CANCELLED
+}
+
+enum TestCentreCountry {
+  ENGLAND
+  SCOTLAND
+  WALES
+  NORTHERN_IRELAND
+}
+
+enum TestCentreSourceAgency {
+  DVSA
+  DVA
+}
+
+enum TestSwapJurisdiction {
+  GB_DVSA
+  NI_DVA
+}
+
+enum TestSwapAccountStatus {
+  ACTIVE
+  SUSPENDED
+  DELETED
+}
+
+enum TestSwapTestType {
+  WEEKDAY_STANDARD_CAR
+  EVENING_WEEKEND_BANK_HOLIDAY_STANDARD_CAR
+  EXTRA_TIME_SPECIAL_REQUIREMENTS
+  EXTENDED_WEEKDAY
+  EXTENDED_EVENING_WEEKEND_BANK_HOLIDAY
+}
+
+enum TestSwapTimePreference {
+  ANY
+  MORNING
+  AFTERNOON
+  EVENING
+}
+
+enum TestSwapDesiredDirection {
+  EARLIER
+  LATER
+  EITHER
+}
+
+enum TestSwapListingStatus {
+  ACTIVE
+  PAUSED
+  MATCHED
+  COMPLETED
+  EXPIRED
+  DELETED
+  BANNED
+}
+
+enum TestSwapMatchStatus {
+  PROPOSED
+  LEARNER_A_ACCEPTED
+  LEARNER_B_ACCEPTED
+  BOTH_ACCEPTED
+  CALLER_PENDING
+  BOOKING_REFERENCE_CONSENT_REQUESTED
+  BOOKING_REFERENCE_SHARED
+  COMPLETED
+  DECLINED
+  EXPIRED
+  REPORTED
+}
+
+enum TestSwapInstructorAvailabilitySlot {
+  CURRENT_TEST
+  PROPOSED_SWAP
+}
+
+enum TestSwapInstructorAvailabilityStatus {
+  AVAILABLE
+  UNAVAILABLE
+  NEEDS_DISCUSSION
+}
+
+enum InvoiceStatus {
+  DRAFT
+  ISSUED
+  PART_PAID
+  PAID
+  VOID
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCEEDED
+  FAILED
+  REFUNDED
+}
+
+enum DocumentAudience {
+  INTERNAL
+  LEARNER
+  SHARED
+}
+
+enum DocumentCategory {
+  LICENCE
+  THEORY_CERTIFICATE
+  PRACTICAL_CERTIFICATE
+  IDENTITY
+  CONSENT_FORM
+  INVOICE
+  RECEIPT
+  OTHER
+}
+
+enum DocumentWorkflowState {
+  REQUESTED
+  RECEIVED
+  UNDER_REVIEW
+  APPROVED
+  REJECTED
+  EXPIRED
+}
+
+enum CollectionsCaseStatus {
+  ACTIVE
+  MONITORED
+}
+
+enum LearnerPaymentMode {
+  PAY_AS_YOU_GO
+  PREPAY_BLOCK
+}
+
+enum LearnerStatus {
+  ACTIVE
+  PENDING_INSTRUCTOR
+  WAITING
+  PASSED
+  INACTIVE
+}
+
+enum ProgressRecordPaymentMethod {
+  PREPAY_BLOCK
+  PAYG_CASH
+  PAYG_BANK_TRANSFER
+  PAYG_CARD
+  NOT_PAID
+}
+
+enum ProgressRecordPaymentStatus {
+  PENDING
+  CONFIRMED
+  OVERDUE
+  NOT_APPLICABLE
+}
+
+enum InvoiceType {
+  LESSON
+  BLOCK_BOOKING
+  OTHER
+}
+
+enum ProductCategory {
+  LESSON
+  COURSE
+  MATERIAL
+  TEST
+  FRANCHISE
+  OTHER
+}
+
+enum InstructorPayoutStatus {
+  PENDING
+  PAID
+  VOID
+}
+
+enum InstructorPayoutMethod {
+  BANK_TRANSFER
+  CASH
+  OTHER
+  GIFT_VOUCHER
+}
+
+enum PaymentProvider {
+  BANK_TRANSFER
+  DEBIT_CARD
+  CASH
+  OTHER
+}
+
+enum AuditAction {
+  CREATED
+  UPDATED
+  ARCHIVED
+  DELETED
+  VIEWED
+  EXPORTED
+  SIGNED_IN
+  SIGNED_OUT
+}
+
+enum CrmEmailDirection {
+  INBOUND
+  OUTBOUND
+}
+
+enum CrmEmailDeliveryStatus {
+  PENDING
+  SENT
+  RECEIVED
+  FAILED
+}
+
+enum CrmEmailThreadStatus {
+  OPEN
+  WAITING_ON_CUSTOMER
+  WAITING_ON_INTERNAL
+  RESOLVED
+}
+
+enum CrmEmailThreadPriority {
+  NORMAL
+  PRIORITY
+  URGENT
+}
+
+enum BlogPostStatus {
+  DRAFT
+  PUBLISHED
+}
+
+enum BlogPostPin {
+  NONE
+  FEATURED
+}
+
+enum SiteContentType {
+  TEXT
+  RICH_TEXT
+  HTML
+  JSON
+}
+
+enum NavLocation {
+  HEADER
+  FOOTER
+}
+
+enum TestimonialSource {
+  MANUAL
+  GOOGLE
+  TRUSTPILOT
+  FACEBOOK
+}
+
+enum LessonTypeName {
+  STANDARD
+  INTENSIVE
+  REFRESHER
+  BLOCK_BOOKING
+  AUTOMATIC
+  TEST_PREP
+}
+
+model TestSwapInstructorMfaFactor {
+  id                  String                    @id @default(cuid())
+  accountId           String
+  method              MfaMethod
+  status              MfaFactorStatus           @default(PENDING)
+  label               String?
+  isPrimary           Boolean                   @default(false)
+  totpSecretEncrypted String?                   @db.Text
+  createdAt           DateTime                  @default(now())
+  activatedAt         DateTime?
+  revokedAt           DateTime?
+  account             TestSwapInstructorAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  @@index([accountId, method, status], map: "ts_imfa_account_method_status_idx")
+}
+
+model TestSwapInstructorBackupCode {
+  id        String                    @id @default(cuid())
+  accountId String
+  codeHash  String                    @unique
+  usedAt    DateTime?
+  createdAt DateTime                  @default(now())
+  account   TestSwapInstructorAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  @@index([accountId, usedAt], map: "ts_ibackup_account_used_idx")
+}
+
+// ── Lead Notes ──
+
+model LeadNote {
+  id           String   @id @default(cuid())
+  leadId       String
+  authorUserId String
+  note         String   @db.Text
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  lead   Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  author User @relation(fields: [authorUserId], references: [id], onDelete: Cascade)
+
+  @@index([leadId])
+  @@index([authorUserId])
+}
+
+// ── Instructor-Learner Bridge ──
+
+enum LearnerGoalStatus {
+  ACTIVE
+  COMPLETED
+  ARCHIVED
+}
+
+model LearnerGoal {
+  id            String            @id @default(cuid())
+  learnerId     String
+  instructorId  String
+  title         String
+  description   String?           @db.Text
+  targetSkill   String?
+  targetLevel   String?
+  dueDate       DateTime?
+  status          LearnerGoalStatus @default(ACTIVE)
+  completedAt   DateTime?
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+
+  learner       LearnerProfile    @relation(fields: [learnerId], references: [id], onDelete: Cascade)
+  instructor    InstructorProfile @relation(fields: [instructorId], references: [id], onDelete: Cascade)
+
+  @@index([learnerId, status])
+  @@index([instructorId])
+}
+
+enum SelfAssessmentConfidence {
+  NOT_CONFIDENT
+  SLIGHTLY_CONFIDENT
+  MODERATELY_CONFIDENT
+  VERY_CONFIDENT
+  FULLY_CONFIDENT
+}
+
+model LearnerSelfAssessment {
+  id            String                  @id @default(cuid())
+  learnerId     String
+  skillLabel    String
+  confidence    SelfAssessmentConfidence
+  notes         String?                 @db.Text
+  lessonId      String?
+  createdAt     DateTime                @default(now())
+  updatedAt     DateTime                @updatedAt
+
+  learner       LearnerProfile          @relation(fields: [learnerId], references: [id], onDelete: Cascade)
+
+  @@index([learnerId, skillLabel])
+  @@index([createdAt])
+}
+
+enum LessonPrepStatus {
+  ASSIGNED
+  IN_PROGRESS
+  COMPLETED
+  SKIPPED
+}
+
+model LessonPrep {
+  id            String          @id @default(cuid())
+  learnerId     String
+  instructorId  String
+  lessonId      String?
+  title         String
+  description   String?         @db.Text
+  resourceLink  String?
+  dueBefore     DateTime?
+  status          LessonPrepStatus @default(ASSIGNED)
+  completedAt   DateTime?
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  learner       LearnerProfile  @relation(fields: [learnerId], references: [id], onDelete: Cascade)
+  instructor    InstructorProfile @relation(fields: [instructorId], references: [id], onDelete: Cascade)
+
+  @@index([learnerId, status])
+  @@index([instructorId])
+  @@index([lessonId])
+}
+
+// ── Admin Diary ──
+
+enum DiaryPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum DiaryStatus {
+  PENDING
+  COMPLETED
+  CANCELLED
+}
+
+model DiaryEntry {
+  id              String        @id @default(cuid())
+  title           String
+  description     String?       @db.Text
+  dueDate         DateTime
+  durationMinutes Int?
+  priority        DiaryPriority @default(MEDIUM)
+  status          DiaryStatus   @default(PENDING)
+  recurrence      String?       // NONE, DAILY, WEEKLY, MONTHLY
+  recurrenceUntil DateTime?
+  seriesId        String?       // Links recurring entries together
+  entityType      String?
+  entityId        String?
+  assignedUserId  String?
+  createdByUserId String
+  completedAt     DateTime?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  createdBy User  @relation("diaryCreatedBy", fields: [createdByUserId], references: [id])
+  assignedTo User? @relation("diaryAssignedTo", fields: [assignedUserId], references: [id])
+
+  @@index([dueDate])
+  @@index([status])
+  @@index([entityType, entityId])
+  @@index([assignedUserId])
+  @@index([createdByUserId])
+  @@index([seriesId])
+}

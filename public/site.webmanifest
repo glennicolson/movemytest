@@ -1,0 +1,21 @@
+{
+  "name": "The DTC",
+  "short_name": "The DTC",
+  "description": "The Driver Training Centre — professional driving lessons across Edinburgh, The Lothians, Dumfries and surrounding areas.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#c62828",
+  "icons": [
+    {
+      "src": "/android-chrome-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/android-chrome-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

@@ -1,0 +1,208 @@
+@import "tailwindcss";
+
+:root {
+  /* ── MoveMyTest Brand Palette (from logo) ── */
+  --mmt-blue: #0056B3;           /* Primary blue - "move", "test", calendar, road */
+  --mmt-blue-dark: #003d7a;      /* Darker blue for hover states */
+  --mmt-blue-light: #00AEEF;     /* Light cyan blue - ".co.uk", accents */
+  --mmt-green: #28B028;          /* Primary green - "my", checkmark, arrows */
+  --mmt-green-dark: #1e8a1e;     /* Darker green for hover states */
+  --mmt-green-light: #4cd64c;    /* Lighter green for highlights */
+
+  /* ── Application Colours ── */
+  --background: #f4f6f8;
+  --foreground: #111827;
+  --surface: #ffffff;
+  --surface-muted: #edf2f7;
+  --border: #d6dde6;
+  --brand: var(--mmt-blue);
+  --brand-strong: var(--mmt-blue-dark);
+  --brand-accent: var(--mmt-green);
+  --success: #15803d;
+  --warning: #b45309;
+  --danger: #b91c1c;
+  --muted: #5b6474;
+}
+
+/* ── MoveMyTest Shell ── */
+.mmt-shell {
+  --mmt-sidebar-from: #0056B3;
+  --mmt-sidebar-to: #003d7a;
+  --mmt-sidebar-accent: var(--mmt-green);
+}
+
+/* ── Instructor Portal shell ── */
+.instructor-portal {
+  --instructor-fab: var(--mmt-blue);
+  --instructor-fab-hover: var(--mmt-blue-dark);
+  --instructor-mint: #e8f4fd;
+  --instructor-shared: #fff8e1;
+  --instructor-shared-border: #f0e6b8;
+  --instructor-private: #ffebee;
+  --instructor-private-border: #f5cdd6;
+  --instructor-conflict: #c44b4b;
+  --instructor-conflict-bg: #fef2f2;
+  --instructor-tab-active: var(--mmt-blue);
+  --instructor-tab-inactive: #64748b;
+  --instructor-card: #ffffff;
+  --instructor-card-hover: #f8fafc;
+  --instructor-border: #e2e8f0;
+  --instructor-surface: #f8fafc;
+  --instructor-text-primary: #0f172a;
+  --instructor-text-secondary: #475569;
+  --instructor-text-muted: #94a3b8;
+  --instructor-timeline-bg: #f1f5f9;
+  --instructor-timeline-block: var(--mmt-blue);
+  --instructor-timeline-block-bg: #d6e8f7;
+  --instructor-bottom-nav-height: 56px;
+  --instructor-fab-size: 56px;
+  --instructor-fab-margin: 16px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+/* ── Typekit Fonts: https://use.typekit.net/esr4yrd.css ──
+   Font family: sofia-pro (weights 200-900, italic variants)
+   Weights available: 200, 300, 400, 500, 600, 700, 800, 900 */
+
+html {
+  font-family: "sofia-pro", Arial, Helvetica, sans-serif;
+  background: var(--background);
+  color: var(--foreground);
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  overflow-x: hidden;
+  background:
+    radial-gradient(circle at top left, rgba(0, 174, 239, 0.10), transparent 28%),
+    radial-gradient(circle at top right, rgba(0, 86, 179, 0.08), transparent 24%),
+    linear-gradient(180deg, #f8fafb 0%, #edf2f6 100%);
+  color: var(--foreground);
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* Dashboard button - force white text */
+a.dashboard-button {
+  background-color: var(--brand);
+  color: #ffffff !important;
+}
+a.dashboard-button:hover {
+  background-color: var(--brand-strong);
+  color: #ffffff !important;
+}
+a.dashboard-button svg {
+  color: #ffffff !important;
+}
+
+/* Edit listing button hover - force white text */
+a.edit-listing-button:hover {
+  background-color: var(--brand);
+  color: #ffffff !important;
+  border-color: var(--brand);
+}
+
+/* Coffee button - force white text */
+a.coffee-button {
+  background-color: var(--brand);
+  color: #ffffff !important;
+}
+a.coffee-button:hover {
+  background-color: var(--brand-strong);
+  color: #ffffff !important;
+}
+a.coffee-button svg {
+  color: #ffffff !important;
+}
+
+/* Instructor edit button - force white text */
+a.instructor-edit-button {
+  background-color: var(--brand);
+  color: #ffffff !important;
+}
+a.instructor-edit-button:hover {
+  background-color: var(--brand-strong);
+  color: #ffffff !important;
+}
+a.coffee-button {
+  background-color: var(--brand);
+  color: #ffffff !important;
+}
+a.coffee-button:hover {
+  background-color: var(--brand-strong);
+  color: #ffffff !important;
+}
+a.coffee-button svg {
+  color: #ffffff !important;
+}
+
+img,
+svg,
+video,
+canvas {
+  max-width: 100%;
+}
+
+@media (max-width: 640px) {
+  input,
+  select,
+  textarea {
+    font-size: 16px;
+  }
+}
+
+/* ── Font Utility Classes ── */
+.font-heading {
+  font-family: "sofia-pro", Arial, Helvetica, sans-serif;
+  font-weight: 700;
+}
+
+.font-body {
+  font-family: "sofia-pro", Arial, Helvetica, sans-serif;
+  font-weight: 400;
+}
+
+.font-light {
+  font-family: "sofia-pro", Arial, Helvetica, sans-serif;
+  font-weight: 300;
+}
+
+.font-medium {
+  font-family: "sofia-pro", Arial, Helvetica, sans-serif;
+  font-weight: 500;
+}
+
+.font-semibold {
+  font-family: "sofia-pro", Arial, Helvetica, sans-serif;
+  font-weight: 600;
+}
+
+.font-bold {
+  font-family: "sofia-pro", Arial, Helvetica, sans-serif;
+  font-weight: 700;
+}
+
+.font-black {
+  font-family: "sofia-pro", Arial, Helvetica, sans-serif;
+  font-weight: 900;
+}
+
+/* ── Calendar unavailability stripe pattern ── */
+.fc-event.unavailability-block,
+.unavailability-stripe {
+  background: repeating-linear-gradient(
+    135deg,
+    rgba(148, 163, 184, 0.25),
+    rgba(148, 163, 184, 0.25) 6px,
+    rgba(148, 163, 184, 0.55) 6px,
+    rgba(148, 163, 184, 0.55) 12px
+  );
+  border-color: #94a3b8;
+}

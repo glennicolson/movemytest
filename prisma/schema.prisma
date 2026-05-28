@@ -1,0 +1,582 @@
+// MoveMyTest — Standalone Prisma Schema
+// Extracted from DTC Test Swap feature, DTC-specific relations removed
+// Uses MySQL on localhost:3309
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// ── Core Learner Account ──
+model LearnerAccount {
+  id                            String                           @id @default(cuid())
+  email                         String                           @unique
+  passwordHash                  String
+  mobileNumber                  String?
+  status                        AccountStatus                    @default(ACTIVE)
+  termsAcceptedAt               DateTime
+  privacyAcceptedAt             DateTime
+  officialProcessAcknowledgedAt DateTime
+  mobileContactConsentAt        DateTime?
+  accountSetupCompletedAt       DateTime?
+  marketingConsentAt            DateTime?
+  emailVerifiedAt               DateTime?
+  lastLoginAt                   DateTime?
+  resetToken                    String?
+  resetTokenExpiresAt           DateTime?
+  createdAt                     DateTime                         @default(now())
+  updatedAt                     DateTime                         @updatedAt
+
+  consents                LearnerConsent[]
+  listings                Listing[]
+  matchEvents             MatchEvent[]
+  bookingReferenceSecrets BookingReferenceSecret[]
+  reports                 Report[]                @relation("LearnerReports")
+  reportResponses         ReportResponse[]        @relation("LearnerReportResponses")
+  mfaFactors              LearnerMfaFactor[]
+  backupCodes             LearnerBackupCode[]
+  invites                 LearnerInvite[]
+  notifications           LearnerNotification[]
+
+  @@index([status, createdAt])
+}
+
+model LearnerMfaFactor {
+  id                  String          @id @default(cuid())
+  accountId           String
+  method              MfaMethod
+  status              MfaFactorStatus @default(PENDING)
+  label               String?
+  isPrimary           Boolean         @default(false)
+  totpSecretEncrypted String?         @db.Text
+  createdAt           DateTime        @default(now())
+  activatedAt         DateTime?
+  revokedAt           DateTime?
+  account             LearnerAccount  @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  @@index([accountId, method, status])
+}
+
+model LearnerBackupCode {
+  id        String         @id @default(cuid())
+  accountId String
+  codeHash  String         @unique
+  usedAt    DateTime?
+  createdAt DateTime       @default(now())
+  account   LearnerAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  @@index([accountId, usedAt])
+}
+
+// ── Learner Invite ──
+model LearnerInvite {
+  id                           String     @id @default(cuid())
+  invitedByInstructorAccountId String?
+  claimedByAccountId           String?
+  learnerName                  String?
+  email                        String
+  mobileNumber                 String?
+  instructorAdiNumber          String?
+  status                       String     @default("PENDING")
+  tokenHash                    String?
+  inviteSentAt                 DateTime?
+  inviteError                  String?    @db.Text
+  claimedAt                    DateTime?
+  createdAt                    DateTime   @default(now())
+  updatedAt                    DateTime   @updatedAt
+
+  invitedByInstructorAccount InstructorAccount? @relation(fields: [invitedByInstructorAccountId], references: [id], onDelete: SetNull)
+  claimedByAccount           LearnerAccount?      @relation(fields: [claimedByAccountId], references: [id], onDelete: SetNull)
+
+  @@index([email, status])
+  @@index([invitedByInstructorAccountId, createdAt])
+  @@index([claimedByAccountId])
+}
+
+// ── Learner Consent ──
+model LearnerConsent {
+  id             String         @id @default(cuid())
+  accountId      String
+  consentType    String
+  consentVersion String
+  acceptedAt     DateTime       @default(now())
+  ipAddress      String?
+  userAgent      String?        @db.Text
+  account        LearnerAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  @@index([accountId, consentType])
+}
+
+// ── Test Centre (standalone copy) ──
+model TestCentre {
+  id           String   @id @default(cuid())
+  slug         String   @unique
+  name         String
+  addressLine1 String?
+  town         String?
+  postcode     String?
+  region       String?
+  passRate     Float?
+  latitude     Float?
+  longitude    Float?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  currentListings  Listing[] @relation("CurrentCentre")
+  originalListings Listing[] @relation("OriginalCentre")
+
+  @@index([region])
+  @@index([slug])
+}
+
+// ── Test Listing ──
+model Listing {
+  id                        String              @id @default(cuid())
+  accountId                 String?
+  currentCentreId           String
+  originalCentreId          String?
+  currentDateTime           DateTime
+  bookingReferenceEncrypted String?             @db.Text
+  bookingReferenceIv        String?
+  bookingReferenceAuthTag   String?
+  testType                  TestType
+  hasRemainingChange        Boolean
+  desiredDateFrom           DateTime
+  desiredDateTo             DateTime
+  desiredTimePreference     TimePreference      @default(ANY)
+  desiredCentreIds          Json
+  desiredDirection          DesiredDirection
+  status                    ListingStatus       @default(ACTIVE)
+  jurisdiction              Jurisdiction
+  expiresAt                 DateTime
+  createdAt                 DateTime            @default(now())
+  updatedAt                 DateTime            @updatedAt
+
+  account           LearnerAccount?    @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  currentCentre     TestCentre         @relation("CurrentCentre", fields: [currentCentreId], references: [id])
+  originalCentre    TestCentre?        @relation("OriginalCentre", fields: [originalCentreId], references: [id])
+  listingAMatches   Match[]            @relation("ListingAMatches")
+  listingBMatches   Match[]            @relation("ListingBMatches")
+  instructorDetails ListingInstructor?
+  reports           Report[]
+
+  @@index([accountId, status])
+  @@index([currentCentreId, status])
+  @@index([jurisdiction, status])
+  @@index([currentDateTime])
+}
+
+// ── Instructor Account ──
+model InstructorAccount {
+  id                         String                   @id @default(cuid())
+  adiNumber                  String                   @unique
+  firstName                  String
+  lastName                   String
+  email                      String                   @unique
+  mobileNumber               String?
+  passwordHash               String
+  status                     String                   @default("ACTIVE")
+  emailVerifiedAt            DateTime?
+  mobileVerifiedAt           DateTime?
+  lastLoginAt                DateTime?
+  resetToken                 String?
+  resetTokenExpiresAt        DateTime?
+  verificationToken          String?
+  verificationTokenExpiresAt DateTime?
+  createdAt                  DateTime                   @default(now())
+  updatedAt                  DateTime                   @updatedAt
+
+  listingLinks          ListingInstructor[]
+  invites               InstructorInvite[]
+  learnerInvites        LearnerInvite[]
+  availabilityDecisions InstructorAvailabilityDecision[]
+  auditLogs             InstructorAuditLog[]
+  mfaFactors            InstructorMfaFactor[]
+  backupCodes           InstructorBackupCode[]
+
+  @@index([adiNumber, status])
+  @@index([email, status])
+}
+
+model InstructorMfaFactor {
+  id                  String            @id @default(cuid())
+  accountId           String
+  method              MfaMethod
+  status              MfaFactorStatus   @default(PENDING)
+  label               String?
+  isPrimary           Boolean           @default(false)
+  totpSecretEncrypted String?           @db.Text
+  createdAt           DateTime          @default(now())
+  activatedAt         DateTime?
+  revokedAt           DateTime?
+  account             InstructorAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  @@index([accountId, method, status])
+}
+
+model InstructorBackupCode {
+  id        String            @id @default(cuid())
+  accountId String
+  codeHash  String            @unique
+  usedAt    DateTime?
+  createdAt DateTime          @default(now())
+  account   InstructorAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  @@index([accountId, usedAt])
+}
+
+// ── Instructor Invite ──
+model InstructorInvite {
+  id                  String           @id @default(cuid())
+  listingInstructorId String
+  instructorAccountId String?
+  email               String
+  adiNumber           String
+  tokenHash           String?
+  status              String           @default("PENDING")
+  inviteSentAt        DateTime?
+  inviteError         String?          @db.Text
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @updatedAt
+
+  listingInstructor   ListingInstructor  @relation(fields: [listingInstructorId], references: [id], onDelete: Cascade)
+  instructorAccount   InstructorAccount? @relation(fields: [instructorAccountId], references: [id], onDelete: SetNull)
+
+  @@index([email, status])
+  @@index([adiNumber, status])
+  @@index([listingInstructorId])
+}
+
+// ── Listing-Instructor Link ──
+model ListingInstructor {
+  id                                  String                   @id @default(cuid())
+  listingId                           String                   @unique
+  instructorAccountId               String?
+  adiNumber                           String?
+  firstName                           String?
+  lastName                            String?
+  email                               String?
+  mobileNumber                        String?
+  learnerConfirmedPermissionAt        DateTime?
+  learnerConfirmedAvailabilityCheckAt DateTime?
+  inviteSentAt                        DateTime?
+  createdAt                           DateTime                 @default(now())
+  updatedAt                           DateTime                 @updatedAt
+
+  listing               Listing                         @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  instructorAccount       InstructorAccount?              @relation(fields: [instructorAccountId], references: [id], onDelete: SetNull)
+  invites                 InstructorInvite[]
+  availabilityDecisions   InstructorAvailabilityDecision[]
+  auditLogs               InstructorAuditLog[]
+
+  @@index([adiNumber])
+  @@index([instructorAccountId])
+  @@index([email])
+}
+
+// ── Instructor Availability ──
+model InstructorAvailabilityDecision {
+  id                  String                       @id @default(cuid())
+  listingInstructorId String
+  instructorAccountId String?
+  matchId             String?
+  slotType            InstructorAvailabilitySlot
+  status              InstructorAvailabilityStatus
+  note                String?                      @db.Text
+  decidedAt           DateTime                     @default(now())
+  createdAt           DateTime                     @default(now())
+  updatedAt           DateTime                     @updatedAt
+
+  listingInstructor ListingInstructor      @relation(fields: [listingInstructorId], references: [id], onDelete: Cascade)
+  instructorAccount InstructorAccount?     @relation(fields: [instructorAccountId], references: [id], onDelete: SetNull)
+  match             Match?                 @relation(fields: [matchId], references: [id], onDelete: Cascade)
+
+  @@index([listingInstructorId, slotType, decidedAt])
+  @@index([instructorAccountId, decidedAt])
+  @@index([matchId, slotType, decidedAt])
+  @@index([status])
+}
+
+model InstructorAuditLog {
+  id                  String              @id @default(cuid())
+  instructorAccountId String?
+  listingInstructorId String?
+  matchId             String?
+  action              String
+  detail              Json?
+  createdAt           DateTime            @default(now())
+
+  instructorAccount InstructorAccount? @relation(fields: [instructorAccountId], references: [id], onDelete: SetNull)
+  listingInstructor ListingInstructor? @relation(fields: [listingInstructorId], references: [id], onDelete: SetNull)
+  match             Match?             @relation(fields: [matchId], references: [id], onDelete: SetNull)
+
+  @@index([instructorAccountId, createdAt])
+  @@index([listingInstructorId, createdAt])
+  @@index([matchId, createdAt])
+  @@index([action])
+}
+
+// ── Match ──
+model Match {
+  id                                  String                           @id @default(cuid())
+  listingAId                          String
+  listingBId                          String
+  status                              MatchStatus                      @default(PROPOSED)
+  score                               Int                              @default(0)
+  qualitySummary                      String?                          @db.Text
+  ineligibleReasons                   Json?
+  learnerAAcceptedAt                  DateTime?
+  learnerBAcceptedAt                  DateTime?
+  bothAcceptedAt                      DateTime?
+  learnerABookingReferenceConfirmedAt DateTime?
+  learnerBBookingReferenceConfirmedAt DateTime?
+  learnerADvsaCallerAt                DateTime?
+  learnerBDvsaCallerAt                DateTime?
+  callWindowStartedAt                 DateTime?
+  callWindowExpiresAt                 DateTime?
+  learnerACompletedAt                 DateTime?
+  learnerBCompletedAt                 DateTime?
+  cancelledAt                         DateTime?
+  cancelReason                        String?                          @db.Text
+  archivedAt                          DateTime?
+  instructorConfirmedByLearnerAtA     DateTime?
+  instructorConfirmedByLearnerAtB     DateTime?
+  expiresAt                           DateTime
+  completedAt                         DateTime?
+  createdAt                           DateTime                         @default(now())
+  updatedAt                           DateTime                         @updatedAt
+
+  listingA                        Listing                          @relation("ListingAMatches", fields: [listingAId], references: [id], onDelete: Cascade)
+  listingB                        Listing                          @relation("ListingBMatches", fields: [listingBId], references: [id], onDelete: Cascade)
+  events                          MatchEvent[]
+  secrets                         BookingReferenceSecret[]
+  reports                         Report[]
+  instructorAvailabilityDecisions InstructorAvailabilityDecision[]
+  instructorAuditLogs             InstructorAuditLog[]
+
+  @@unique([listingAId, listingBId])
+  @@index([status])
+  @@index([expiresAt])
+}
+
+// ── Match Event ──
+model MatchEvent {
+  id              String         @id @default(cuid())
+  matchId         String
+  accountId       String?
+  eventType       String
+  detail          Json?
+  createdAt       DateTime       @default(now())
+
+  match     Match           @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  account   LearnerAccount? @relation(fields: [accountId], references: [id])
+
+  @@index([matchId, createdAt])
+  @@index([accountId])
+  @@index([eventType])
+}
+
+// ── Booking Reference Secret ──
+model BookingReferenceSecret {
+  id                     String          @id @default(cuid())
+  matchId                String
+  ownerAccountId         String?
+  encryptedValue         String          @db.Text
+  iv                     String
+  authTag                String
+  revealedAt             DateTime?
+  expiresAt              DateTime
+  deletedAt              DateTime?
+  createdAt              DateTime        @default(now())
+
+  match           Match            @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  ownerAccount    LearnerAccount?  @relation(fields: [ownerAccountId], references: [id])
+
+  @@index([matchId, ownerAccountId])
+  @@index([expiresAt])
+  @@index([deletedAt])
+}
+
+// ── Report ──
+model Report {
+  id              String   @id @default(cuid())
+  listingId       String?
+  matchId         String?
+  reporterAccountId String?
+  reason          String
+  detail          String?  @db.Text
+  status          String   @default("OPEN")
+  mobileNumber    String?
+  closedAt        DateTime?
+  closedReason    String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  listing         Listing?        @relation(fields: [listingId], references: [id], onDelete: SetNull)
+  match           Match?          @relation(fields: [matchId], references: [id], onDelete: SetNull)
+  reporter        LearnerAccount? @relation("LearnerReports", fields: [reporterAccountId], references: [id], onDelete: Cascade)
+  responses       ReportResponse[] @relation("ReportResponses")
+
+  @@index([status, createdAt])
+  @@index([listingId])
+  @@index([matchId])
+  @@index([reporterAccountId])
+}
+
+model ReportResponse {
+  id           String          @id @default(cuid())
+  reportId     String
+  authorAccountId String?
+  message      String          @db.Text
+  channel      ResponseChannel @default(PORTAL_REPLY)
+  createdAt    DateTime        @default(now())
+
+  report   Report           @relation("ReportResponses", fields: [reportId], references: [id], onDelete: Cascade)
+  author   LearnerAccount?  @relation("LearnerReportResponses", fields: [authorAccountId], references: [id], onDelete: SetNull)
+
+  @@index([reportId, createdAt])
+  @@index([authorAccountId])
+}
+
+// ── Learner Notification ──
+model LearnerNotification {
+  id                String         @id @default(cuid())
+  learnerAccountId  String
+  title             String
+  message           String         @db.Text
+  readAt            DateTime?
+  relatedReportId   String?
+  relatedResponseId String?
+  createdAt         DateTime       @default(now())
+
+  learnerAccount LearnerAccount @relation(fields: [learnerAccountId], references: [id], onDelete: Cascade)
+
+  @@index([learnerAccountId, readAt])
+  @@index([createdAt])
+  @@index([relatedReportId])
+}
+
+// ── Email Queue ──
+model EmailQueue {
+  id            String    @id @default(cuid())
+  matchId       String
+  kind          String
+  recipient     String
+  recipientRole String    @default("LEARNER")
+  scheduledFor  DateTime
+  sentAt        DateTime?
+  error         String?   @db.Text
+  retryCount    Int       @default(0)
+  maxRetries    Int       @default(3)
+  status        String    @default("PENDING")
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([status, scheduledFor])
+  @@index([matchId])
+  @@index([matchId, kind, recipient])
+}
+
+// ── Admin Note ──
+model AdminNote {
+  id           String   @id @default(cuid())
+  entityType   String
+  entityId     String
+  authorEmail  String
+  note         String   @db.Text
+  createdAt    DateTime @default(now())
+
+  @@index([entityType, entityId])
+  @@index([authorEmail])
+}
+
+// ── Enums ──
+
+enum ResponseChannel {
+  PORTAL_REPLY
+  EMAIL_SENT
+  PHONE_CALL_NOTE
+}
+
+enum Jurisdiction {
+  GB_DVSA
+  NI_DVA
+}
+
+enum AccountStatus {
+  ACTIVE
+  SUSPENDED
+  DELETED
+}
+
+enum TestType {
+  WEEKDAY_STANDARD_CAR
+  EVENING_WEEKEND_BANK_HOLIDAY_STANDARD_CAR
+  EXTRA_TIME_SPECIAL_REQUIREMENTS
+  EXTENDED_WEEKDAY
+  EXTENDED_EVENING_WEEKEND_BANK_HOLIDAY
+}
+
+enum TimePreference {
+  ANY
+  MORNING
+  AFTERNOON
+  EVENING
+}
+
+enum DesiredDirection {
+  EARLIER
+  LATER
+  EITHER
+}
+
+enum ListingStatus {
+  ACTIVE
+  PAUSED
+  MATCHED
+  COMPLETED
+  EXPIRED
+  DELETED
+  BANNED
+}
+
+enum MatchStatus {
+  PROPOSED
+  LEARNER_A_ACCEPTED
+  LEARNER_B_ACCEPTED
+  BOTH_ACCEPTED
+  CALLER_PENDING
+  BOOKING_REFERENCE_CONSENT_REQUESTED
+  BOOKING_REFERENCE_SHARED
+  COMPLETED
+  DECLINED
+  EXPIRED
+  REPORTED
+}
+
+enum InstructorAvailabilitySlot {
+  CURRENT_TEST
+  PROPOSED_SWAP
+}
+
+enum InstructorAvailabilityStatus {
+  AVAILABLE
+  UNAVAILABLE
+  NEEDS_DISCUSSION
+}
+
+enum MfaMethod {
+  TOTP
+  WEBAUTHN
+}
+
+enum MfaFactorStatus {
+  PENDING
+  ACTIVE
+  DISABLED
+  REVOKED
+}

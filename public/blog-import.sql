@@ -1,0 +1,372 @@
+-- Blog post export generated from local dev database
+-- Generated at 2026-04-16T14:18:47.859Z
+-- Safe to re-run: uses slug-based upsert
+
+INSERT INTO `BlogPost` (
+  `id`,
+  `title`,
+  `slug`,
+  `featuredImage`,
+  `authorId`,
+  `authorName`,
+  `publishDate`,
+  `excerpt`,
+  `content`,
+  `categories`,
+  `tags`,
+  `seoMetaTitle`,
+  `seoMetaDescription`,
+  `seoNoIndex`,
+  `pin`,
+  `status`,
+  `createdAt`,
+  `updatedAt`
+) VALUES
+('cmnynhqtm0001rzya95g5z1ns', 'How can I deal with driving test nerves?', 'driving-test-tips', '/uploads/blog/1776172977270-accaa95a-8a31-4bf2-b070-79817fa6e64f.png', 'cmo0bt5pz00037uuc7afk91z6', 'The DTC Team', '2026-04-14 00:00:00', 'Driving Test Nerves? Don\'t Worry, We\'ve Got You Covered!
+It\'s normal to feel nervous before your driving test, but with the right mindset and preparation, you can overcome those nerves and pass with flying colors!
+Here are some valuable tips to help you prepare yourself mentally and physically for your driving test:', '<article>
+  <h1>Driving Test Tips: How to Stay Calm and Pass with Confidence</h1>
+
+  <p>Feeling nervous about your driving test? That’s completely normal. The key is to stay calm, trust your training, and focus on driving safely and smoothly.</p>
+
+  <p>At <strong>The Driving Training Centre (The DTC)</strong>, we help learners feel fully prepared before test day. If your instructor says you’re ready, that’s a strong sign you’ve got what it takes to pass.</p>
+
+  <h2>Trust Your Training</h2>
+  <p>Your driving test is your chance to show what you can do. Try to see it as an opportunity rather than a challenge. The examiner is not trying to catch you out — they simply want to see a safe, confident, and considerate drive.</p>
+
+  <h2>Top Tips for a Smooth Driving Test</h2>
+  <ul>
+    <li><strong>Plan ahead:</strong> Anticipate junctions, roundabouts, and traffic so you can approach smoothly without rushing or stopping suddenly.</li>
+    <li><strong>Stay focused:</strong> If you make a small mistake, don’t dwell on it. Stay calm and concentrate on the road ahead.</li>
+    <li><strong>Drive safely, not perfectly:</strong> You don’t need a flawless drive — just a safe and controlled one.</li>
+    <li><strong>Keep good awareness:</strong> Check mirrors regularly, maintain lane discipline, and keep a safe distance from other vehicles.</li>
+  </ul>
+
+  <h2>During the Test</h2>
+  <p>Don’t be distracted if the examiner is writing — they are simply marking your progress. Focus on your driving and follow instructions carefully.</p>
+
+  <p>Remember to take your time, especially at junctions and when making decisions. A calm, steady approach will always work in your favour.</p>
+
+  <h2>Stay Calm and Confident</h2>
+  <p>If you start to feel nervous, take a slow breath and reset your focus. You’ve already put in the work during your lessons — now it’s just about showing those skills.</p>
+
+  <p><strong>You’ve got this.</strong> With the right mindset and preparation, you can pass your driving test with confidence.</p>
+
+  <h2>Need Extra Practice Before Your Test?</h2>
+  <p>If you’d like a final confidence boost before test day, <strong>The DTC</strong> offers tailored driving lessons designed to help you feel fully prepared and in control.</p>
+
+  <p>Get in touch today to book a lesson and give yourself the best chance of passing first time.</p>
+</article>', '["driving test tips","how to pass driving test","driving test nerves","learner driver tips","UK driving test advice"]', '["driving test tips","how to pass driving test","driving test nerves","learner driver tips","UK driving test advice"]', 'Driving Test Tips | How to Pass Your Driving Test First Time', 'Nervous about your driving test? Discover simple, effective driving test tips to stay calm, avoid mistakes, and pass with confidence.', 0, 'FEATURED', 'PUBLISHED', '2026-04-14 13:21:52', '2026-04-14 17:35:09'),
+('cmnytttfe000brzya28szgisi', 'What to Take to Your Driving Test UK | Full Checklist 2026', 'what-to-take-driving-test', '/uploads/blog/1776183879598-f4a017c5-7ff2-4e62-b6ba-23712a0edb28.png', 'cmo0bt5pz00037uuc7afk91z6', 'The DTC Team', '2026-04-09 00:00:00', 'Find out exactly what to take to your UK driving test. Avoid cancellations with this simple checklist and expert advice from The DTC.', '<article>
+  <h1>What to Take to Your Driving Test (UK): Don’t Get Caught Out</h1>
+
+  <p>Turning up for your driving test fully prepared is just as important as your driving itself. Every year, thousands of tests are cancelled because learners forget something essential.</p>
+
+  <p>To help you avoid that situation, we’ve put together a simple guide based on official DVSA guidance — plus a few extra tips from <strong>The Driving Training Centre (The DTC)</strong> to make sure your test day runs smoothly.</p>
+
+  <h2>What You Must Take to Your Driving Test</h2>
+
+  <p>According to GOV.UK, you must bring the following items to your driving test: :contentReference[oaicite:0]{index=0}</p>
+
+  <ul>
+    <li><strong>Your UK provisional driving licence</strong></li>
+    <li><strong>Your theory test pass certificate</strong> (if you have it)</li>
+    <li><strong>A suitable car</strong> (most learners use their instructor’s car)</li>
+  </ul>
+
+  <p>If you arrive without the correct items, your test will be cancelled and you will lose your test fee — so it’s essential to double-check everything before you leave home. :contentReference[oaicite:1]{index=1}</p>
+
+  <h2>Using Your Own Car for the Driving Test</h2>
+
+  <p>You can use your own car for the test, but it must meet strict DVSA rules. This includes:</p>
+
+  <ul>
+    <li>Valid insurance and MOT (if required)</li>
+    <li>Proper L plates displayed</li>
+    <li>No warning lights showing</li>
+    <li>A clean and roadworthy condition</li>
+  </ul>
+
+  <p>If your car does not meet the requirements, your test may be cancelled on the spot.</p>
+
+  <h2>Extra Things You Should Bring</h2>
+
+  <p>While not always mandatory, these can make a big difference on the day:</p>
+
+  <ul>
+    <li>Glasses or contact lenses (if you need them for driving)</li>
+    <li>Comfortable shoes with good pedal control</li>
+    <li>Your test booking confirmation (optional but helpful)</li>
+  </ul>
+
+  <h2>What Happens at the Start of Your Test?</h2>
+
+  <p>Before your test begins, the examiner will:</p>
+
+  <ul>
+    <li>Check your driving licence</li>
+    <li>Confirm you’ve passed your theory test</li>
+    <li>Ask you to sign a declaration</li>
+  </ul>
+
+  <p>You’ll also be asked to complete an eyesight check and answer a “tell me” vehicle safety question before setting off.</p>
+
+  <h2>Common Mistake: Forgetting Documents</h2>
+
+  <p>One of the most common reasons tests are cancelled is simply forgetting your licence or required documents. It sounds simple, but it happens more often than you’d think.</p>
+
+  <p>A good tip is to prepare everything the night before and keep it somewhere you won’t forget — like your bag or wallet.</p>
+
+  <h2>Are You Ready for Your Driving Test?</h2>
+
+  <p>The DVSA recommends only taking your test when you can drive confidently and independently without help. That means:</p>
+
+  <ul>
+    <li>No serious or dangerous mistakes during lessons</li>
+    <li>Consistent, safe driving in different conditions</li>
+    <li>Confidence without relying on your instructor</li>
+  </ul>
+
+  <p>If you’re unsure, it’s always better to wait until you’re fully ready rather than risk failing or wasting your test slot.</p>
+
+  <h2>How The DTC Helps You Prepare</h2>
+
+  <p>At <strong>The Driving Training Centre (The DTC)</strong>, we don’t just teach you how to drive — we prepare you properly for test day.</p>
+
+  <ul>
+    <li>We’ll confirm when you’re test-ready</li>
+    <li>Run mock driving tests to build confidence</li>
+    <li>Make sure you know exactly what to bring</li>
+    <li>Provide a fully compliant car for your test</li>
+  </ul>
+
+  <p>Our goal is simple: to help you feel calm, confident, and fully prepared when it matters most.</p>
+
+  <h2>Final Checklist Before Test Day</h2>
+
+  <ul>
+    <li>Licence ✔</li>
+    <li>Theory test ✔</li>
+    <li>Car ready ✔</li>
+    <li>Glasses (if needed) ✔</li>
+    <li>Confidence ✔</li>
+  </ul>
+
+  <p><strong>Ready to pass your driving test?</strong> Book your lessons with The DTC today and let our expert instructors guide you all the way to success.</p>
+</article>', '[]', '["what to take to driving test UK","driving test checklist","DVSA driving test requirements","driving test documents UK"]', 'What to Take to Your Driving Test UK | Full Checklist 2026', 'Find out exactly what to take to your UK driving test. Avoid cancellations with this simple checklist and expert advice from The DTC.', 0, 'NONE', 'PUBLISHED', '2026-04-14 16:19:13', '2026-04-14 16:50:40'),
+('cmnysiwc80009rzyarlaqqpo7', 'Driving Test Booking Changes 2026 | New DVSA Rules Explained', 'driving-test-booking-changes-2026', '/uploads/blog/1776191585576-cde5838b-96de-4561-9814-40e54c654b07.png', 'cmo0bt5pz00037uuc7afk91z6', 'The DTC Team', '2026-04-07 00:00:00', 'The rules for booking and managing car driving tests will change from spring 2026. Find out what the changes are and how they affect you.', '<article>
+  <h1>Driving Test Booking Rules Are Changing in 2026: What You Need to Know</h1>
+
+  <p>Big changes are coming to the way driving tests are booked in the UK. From spring 2026, the <strong>Driver and Vehicle Standards Agency (DVSA)</strong> is introducing new rules that will affect how you book, manage, and change your driving test.</p>
+
+  <p>If you’re learning to drive, it’s important to understand these updates so you can plan ahead and avoid any surprises.</p>
+
+  <h2>Why Are the Rules Changing?</h2>
+  <p>The DVSA is making these changes to create a fairer system and reduce misuse of driving test bookings. In recent years, high demand, long waiting times, and third-party booking services have made it harder for learners to secure a test. :contentReference[oaicite:0]{index=0}</p>
+
+  <p>The new system is designed to give genuine learners better access to test slots and encourage more thoughtful booking.</p>
+
+  <h2>Key Changes to Driving Test Bookings in 2026</h2>
+
+  <h3>1. You Can Only Make 2 Changes</h3>
+  <p>From <strong>31 March 2026</strong>, you’ll only be allowed to make <strong>two changes</strong> to your driving test booking. This includes changing the date, time, or test centre.</p>
+
+  <p>If you need to make more changes after that, you’ll have to cancel your test and book again. :contentReference[oaicite:1]{index=1}</p>
+
+  <h3>2. You Must Book Your Own Test</h3>
+  <p>From <strong>May 2026</strong>, only the learner driver will be able to book and manage their driving test. Instructors or third-party services will no longer be able to do this for you. :contentReference[oaicite:2]{index=2}</p>
+
+  <p>You may still get help from your instructor, but you’ll need to complete the booking yourself.</p>
+
+  <h3>3. Limited Test Centre Changes</h3>
+  <p>From <strong>June 2026</strong>, you’ll only be able to change your test centre to one of your <strong>nearest locations</strong>, rather than switching across the country. :contentReference[oaicite:3]{index=3}</p>
+
+  <p>This is designed to stop people booking tests in multiple areas just to secure an earlier date.</p>
+
+  <h3>4. New Identity Checks</h3>
+  <p>The DVSA will also introduce identity verification during the booking process to ensure that only genuine learners are securing test slots. :contentReference[oaicite:4]{index=4}</p>
+
+  <h2>What This Means for Learner Drivers</h2>
+  <p>These changes mean you’ll need to be more organised and confident before booking your test. The days of booking early and moving your test multiple times are coming to an end.</p>
+
+  <ul>
+    <li>Book your test when your instructor says you’re ready</li>
+    <li>Avoid unnecessary changes — you only get two</li>
+    <li>Choose your test centre carefully from the start</li>
+    <li>Keep your contact details up to date</li>
+  </ul>
+
+  <h2>How The DTC Can Help</h2>
+  <p>At <strong>The Driving Training Centre (The DTC)</strong>, we help you prepare properly so you feel confident booking your test at the right time.</p>
+
+  <p>Our experienced instructors will guide you on when you’re ready, help you plan your test, and make sure you’re fully prepared — so you don’t need to rely on changing your booking.</p>
+
+  <h2>Final Thoughts</h2>
+  <p>The new driving test booking rules are designed to make the system fairer and more efficient for everyone. While they do require a bit more planning, they also give committed learners a better chance of securing a test.</p>
+
+  <p><strong>Ready to start your journey?</strong> Get in touch with The DTC today and take the next step towards passing your driving test.</p>
+</article>', '[]', '["Driving test booking rules 2026","DVSA changes 2026","driving test changes UK","book driving test UK","learner driver updates"]', 'Driving Test Booking Changes 2026 | New DVSA Rules Explained', 'New DVSA driving test booking rules are coming in 2026. Learn about the 2-change limit, learner-only bookings, and how it affects you.', 0, 'FEATURED', 'PUBLISHED', '2026-04-14 15:42:44', '2026-04-14 18:33:12'),
+('cmnyos2ov0003rzyaqkz2ycx4', 'Provisional Driving Licence Guide | How to Apply & Start Driving', 'provisional-driving-licence-guide', '/uploads/blog/1776175371287-d324c785-7e1a-4374-8bc0-352184da3a84.png', 'cmo0bt5pz00037uuc7afk91z6', 'The DTC Team', '2026-04-06 00:00:00', 'Get Ready to Hit the Road! Your Ultimate Guide to Provisional Driving Licences
+
+Excited to start your driving journey? The first step is to get a provisional driving licence! Don\'t worry if you\'re not sure where to begin - we\'ve got you covered. In this friendly guide, we\'ll answer all your burning questions about provisional driving licences.', '<article>
+  <strong><h1>Your Guide to Getting a Provisional Driving Licence</h1></strong>
+
+  <p>Ready to start learning to drive? The first step is getting your <strong>provisional driving licence</strong>. It might sound complicated, but it’s actually a simple process once you know what to do.</p>
+
+  <p>At <strong>The Driving Training Centre (The DTC)</strong>, we’re here to guide you every step of the way. This quick guide covers everything you need to know to get started.</p>
+
+  <strong><h2>What is a Provisional Driving Licence?</h2></strong>
+  <p>A provisional driving licence allows you to legally start learning to drive in the UK. It lets you drive on public roads as long as you are supervised by a qualified instructor or an experienced driver.</p>
+
+  <strong><h2>How Do I Apply?</h2></strong>
+  <p>You can apply for a provisional licence online via the GOV.UK website or by post using a D1 form from the Post Office. Applying online is usually quicker and costs £34 (or £43 by post).</p>
+
+  <strong><h2>What Do I Need to Apply?</h2></strong>
+  <ul>
+    <li>Proof of identity (such as a passport)</li>
+    <li>Your address history for the last 3 years</li>
+    <li>Your National Insurance number (if you have one)</li>
+    <li>A suitable photo (if required)</li>
+  </ul>
+
+  <strong><h2>When Can I Apply?</h2></strong>
+  <p>You can apply for your provisional driving licence from age 15 years and 9 months, but you can only start driving a car when you turn 17.</p>
+
+  <strong><h2>What Can I Do With a Provisional Licence?</h2></strong>
+  <p>With a provisional licence, you can:</p>
+  <ul>
+    <li>Start driving lessons with a qualified instructor</li>
+    <li>Practice driving with a suitable supervising driver</li>
+    <li>Begin preparing for your theory and practical tests</li>
+  </ul>
+
+  <strong><h2>Important Rules to Remember</h2></strong>
+  <ul>
+    <li>You must display L plates on the front and back of the car</li>
+    <li>You must be supervised by someone over 21 who has held a full licence for at least 3 years</li>
+    <li>You must be properly insured</li>
+    <li>You cannot drive on motorways unless with an approved instructor in a dual-controlled car</li>
+  </ul>
+
+  <strong><h2>How Long Does It Take to Arrive?</h2></strong>
+  <p>Most provisional licences arrive within around 1 week when applying online, although it can take longer during busy periods.</p>
+
+  <strong><h2>Your Next Step: Start Driving Lessons</h2></strong>
+  <p>Once your provisional licence arrives, you’re ready to get behind the wheel and start learning. Many learners begin lessons straight away while studying for their theory test alongside.</p>
+
+  <p>At <strong>The DTC</strong>, our friendly instructors are here to help you build confidence, develop your skills, and pass your test as smoothly as possible.</p>
+
+  <p><strong>Ready to start your driving journey?</strong> Get in touch with The Driving Training Centre today and book your first lesson.</p>
+</article>', '[]', '[]', 'Learn how to apply for a provisional driving licence in the UK. Simple step-by-step guide covering costs, requirements, and how to start driving lessons.', 'provisional driving licence, how to apply for provisional licence, UK driving licence guide, learner driver UK, driving lessons UK', 0, 'FEATURED', 'PUBLISHED', '2026-04-14 13:57:54', '2026-04-14 14:45:24'),
+('cmnypqwp50005rzyax5xyo2q9', 'Winter Driving Tips: Stay Safe and Confident on the Road', 'winter-driving-tips', '/uploads/blog/1776176658742-aa232bf4-77f1-45da-b050-c791d849af87.png', 'cmo0bt5pz00037uuc7afk91z6', 'The DTC Team', '2025-11-03 00:00:00', 'Winter driving can be challenging for everyone, even for experienced drivers. Cold temperatures, icy roads, poor visibility, and unpredictable weather can all make driving more difficult than usual. That is why taking a little extra care during the colder months can make such a big difference.', '<article>
+  <h1>Winter Driving Tips: Stay Safe and Confident on the Road</h1>
+
+  <p>Winter driving can be challenging for everyone, even for experienced drivers. Cold temperatures, icy roads, poor visibility, and unpredictable weather can all make driving more difficult than usual. That is why taking a little extra care during the colder months can make such a big difference.</p>
+
+  <p>At <strong>The Driving Training Centre (The DTC)</strong>, safe driving is always our priority. Our experienced instructors help drivers build confidence in all types of conditions, and winter is no exception. To help you stay safe, prepared, and in control, we have put together our top winter driving tips for tackling the roads in cold, icy, or snowy weather.</p>
+
+  <h2>1. Allow Extra Time for Your Journey</h2>
+  <p>One of the most important <strong>winter driving tips</strong> is to give yourself more time than usual. Ice, frost, fog, and traffic delays can all slow your journey down, and rushing can easily lead to poor decisions behind the wheel.</p>
+
+  <p>Setting off earlier means you can take your time, drive more smoothly, and focus fully on the road ahead. A calm driver is often a safer driver, especially in difficult winter conditions.</p>
+
+  <h2>2. Use Dipped Headlights in Poor Visibility</h2>
+  <p>Winter weather often brings darker mornings, earlier evenings, mist, rain, and fog. Using your dipped headlights in poor visibility helps other road users see you more clearly and improves your own visibility too.</p>
+
+  <p>Remember, your lights are there to help you be seen as well as to help you see. Just make sure you switch them off when they are no longer needed to avoid dazzling other drivers.</p>
+
+  <h2>3. Make Sure Your Windows Are Fully Clear</h2>
+  <p>Before you begin your journey, always clear all snow and ice from the outside of your windows, mirrors, and lights. It is also important to demist the inside of your windows properly before setting off.</p>
+
+  <p>Your air conditioning can help remove condensation quickly and improve visibility inside the car. Driving without a clear view is dangerous and could also put you at risk of a fine, so it is always worth taking a few extra minutes to prepare properly.</p>
+
+  <h2>4. Check Your Screen Wash Regularly</h2>
+  <p>Winter roads can be muddy, wet, and covered in road salt, which can quickly make your windscreen dirty. Good visibility is essential, so make sure your screen wash is topped up and ready to use.</p>
+
+  <p>It is best to use a winter screen wash additive, as this helps prevent it from freezing in low temperatures. A clean windscreen gives you a much better view of the road and helps you spot hazards sooner.</p>
+
+  <h2>5. Make Sure Your Tyres Are in Good Condition</h2>
+  <p>Your tyres play a vital role in helping your car grip the road, especially in wet, icy, or snowy conditions. Check that your tyres have good tread depth and are inflated to the manufacturer’s recommended pressure.</p>
+
+  <p>Worn or under-inflated tyres can reduce your control and increase stopping distances, which is the last thing you want in winter weather. Keeping your tyres in good condition is one of the simplest ways to improve <strong>winter road safety</strong>.</p>
+
+  <h2>Extra Winter Driving Advice</h2>
+  <p>Alongside the essentials above, there are a few other sensible habits that can help you stay safer during the winter months:</p>
+
+  <ul>
+    <li>Drive smoothly and avoid sudden braking, steering, or acceleration.</li>
+    <li>Leave a larger gap between you and the vehicle in front.</li>
+    <li>Reduce your speed when road conditions are poor.</li>
+    <li>Keep an eye on the weather forecast before travelling.</li>
+    <li>Make sure your battery, wipers, and lights are all working properly.</li>
+  </ul>
+
+  <p>Even short journeys can become more dangerous in winter, so taking a few simple precautions before you set off can make all the difference.</p>
+
+  <h2>Build Your Confidence with The DTC</h2>
+  <p>If you feel nervous about driving in winter conditions, you are not alone. Many drivers feel less confident when the weather changes, particularly if they have not driven much in icy or snowy conditions before.</p>
+
+  <p>At <strong>The DTC</strong>, our friendly and experienced instructors are here to help you feel more confident on the road. Whether you are a learner driver, a newly qualified driver, or someone looking for refresher lessons, we can support you with practical guidance and safe driving techniques for all seasons.</p>
+
+  <p>For more support with <strong>safe winter driving</strong>, <strong>refresher driving lessons</strong>, or expert driver training, get in touch with The Driving Training Centre today.</p>
+</article>', '[]', '["winter driving tips","safe winter driving","driving in winter weather","winter road safety","icy road driving tips","The Driving Training Centre"]', 'Winter Driving Tips | Stay Safe on the Road with The DTC', 'Discover The DTC’s top winter driving tips to help you stay safe, confident, and prepared on icy roads, in poor visibility, and during cold weather.', 0, 'FEATURED', 'PUBLISHED', '2026-04-14 14:24:59', '2026-04-14 14:27:32'),
+('cmnyrze7t0007rzya68bcnb6y', 'Top 10 Reasons for Failing Your Driving Test: Expert Advice to Help You Pass', 'top-10-driving-test-fails', '/uploads/blog/1776180449651-ac7f214c-bd94-4273-a30c-91e6338c6cd4.png', 'cmo0bt5pz00037uuc7afk91z6', 'The DTC Team', '2025-09-01 00:00:00', 'Are you worried about failing your driving test? Don’t worry, we’ve got you covered! The Driver and Vehicle Standards Agency (DVSA) has revealed the top 10 reasons why people fail their driving tests. But don’t just take their word for it – our expert instructor, Anthony Johnson, is here to share his insights on how to avoid these common mistakes.', '<article>
+  <h1>Top 10 Reasons for Failing Your Driving Test (and How to Avoid Them)</h1>
+
+  <p>Worried about failing your driving test? You’re not alone. Many learners feel the same, but understanding the most common mistakes can give you a real advantage.</p>
+
+  <p>According to the DVSA, there are clear patterns in why learners fail. At <strong>The Driving Training Centre (The DTC)</strong>, we’ve broken down the top 10 reasons — along with simple tips to help you avoid them and pass with confidence.</p>
+
+  <h2>1. Observations at Junctions</h2>
+  <p>Not checking properly at junctions is the most common reason for failing. Always check mirrors, look both ways, and be aware of pedestrians before moving.</p>
+
+  <h2>2. Not Checking Mirrors When Changing Direction</h2>
+  <p>Before changing lanes or direction, check your mirrors and blind spots. Good observation shows control and awareness.</p>
+
+  <h2>3. Poor Steering Control</h2>
+  <p>Avoid hitting kerbs, making sudden movements, or losing control of the wheel. Keep your steering smooth and steady.</p>
+
+  <h2>4. Turning Right at Junctions</h2>
+  <p>Incorrect positioning or cutting corners can lead to faults. Take your time and position your car correctly before turning.</p>
+
+  <h2>5. Moving Off Safely</h2>
+  <p>Always check all around (including blind spots) before moving off. Don’t rush — safety comes first.</p>
+
+  <h2>6. Responding to Traffic Lights</h2>
+  <p>Be prepared for changing lights. Anticipate, slow down smoothly, and avoid harsh or late decisions.</p>
+
+  <h2>7. Clutch Control</h2>
+  <p>Stalling or rolling back can be avoided with good clutch control. Stay calm and keep your movements smooth.</p>
+
+  <h2>8. Positioning on the Road</h2>
+  <p>Stay in the correct lane and avoid drifting. Good positioning shows confidence and control.</p>
+
+  <h2>9. Ignoring Road Signs and Markings</h2>
+  <p>Understanding road signs is essential. Follow markings carefully and stay aware of restrictions like bus lanes.</p>
+
+  <h2>10. Reverse Parking Control</h2>
+  <p>Take your time when reversing. Use your mirrors effectively and aim to finish within the lines with full control.</p>
+
+  <h2>How to Pass Your Driving Test</h2>
+  <p>The key to passing isn’t perfection — it’s safe, consistent driving. Stay calm, think ahead, and don’t let small mistakes affect the rest of your test.</p>
+
+  <p>At <strong>The DTC</strong>, our experienced instructors help you build confidence, improve your skills, and prepare fully for test day.</p>
+
+  <p><strong>Ready to pass your driving test?</strong> Get in touch today and book your lessons with The Driving Training Centre.</p>
+</article>', '[]', '["driving test fails","why people fail driving test","how to pass driving test UK","driving test tips","learner driver mistakes"]', 'Top 10 Reasons for Failing a Driving Test | How to Pass First Time', 'Discover the top 10 reasons learners fail their driving test and learn how to avoid common mistakes with expert tips from The DTC.', 0, 'NONE', 'PUBLISHED', '2026-04-14 15:27:34', '2026-04-14 17:06:08')
+ON DUPLICATE KEY UPDATE
+  `title` = VALUES(`title`),
+  `featuredImage` = VALUES(`featuredImage`),
+  `authorId` = VALUES(`authorId`),
+  `authorName` = VALUES(`authorName`),
+  `publishDate` = VALUES(`publishDate`),
+  `excerpt` = VALUES(`excerpt`),
+  `content` = VALUES(`content`),
+  `categories` = VALUES(`categories`),
+  `tags` = VALUES(`tags`),
+  `seoMetaTitle` = VALUES(`seoMetaTitle`),
+  `seoMetaDescription` = VALUES(`seoMetaDescription`),
+  `seoNoIndex` = VALUES(`seoNoIndex`),
+  `pin` = VALUES(`pin`),
+  `status` = VALUES(`status`),
+  `updatedAt` = VALUES(`updatedAt`);
