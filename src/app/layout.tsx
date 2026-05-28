@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import "./globals.css";
+import "@/app/globals.css";
 import { SiteHeader } from "@/components/movemytest/site-header";
 
 export const metadata: Metadata = {

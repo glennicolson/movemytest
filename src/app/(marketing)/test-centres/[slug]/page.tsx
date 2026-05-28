@@ -7,11 +7,6 @@ import { breadcrumbSchema, faqSchema } from "@/components/seo/schemas";
 import { TEST_CENTRE_PASS_RATE_SOURCE } from "@/features/movemytest/generated/pass-rate-data";
 import { getRegionOrCentreBySlug, getMoveMyTestDirectorySummary } from "@/features/movemytest/queries";
 
-
-// Force dynamic rendering to avoid static generation DB connection limits
-export const dynamic = 'force-dynamic';
-export const revalidate = 0;
-
 type PageProps = { params: Promise<{ slug: string }> };
 
 function formatPassRate(rate?: { passRate: number }) {
