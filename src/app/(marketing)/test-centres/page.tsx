@@ -8,6 +8,8 @@ import { getMoveMyTestDirectorySummary } from "@/features/movemytest/queries";
 import { CentreSearchAutocomplete, type CentreSearchItem } from "@/components/movemytest/centre-search-autocomplete";
 import { NearestCentresByLocation } from "@/components/movemytest/nearest-centres-by-location";
 
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   title: "Driving MoveMyTest Test Centres Directory",
   description: "Browse MoveMyTest centres by region, county, centre name, town, city or postcode, with DVSA practical car pass-rate context where available.",

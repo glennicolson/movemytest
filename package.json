@@ -22,7 +22,12 @@
     "bcryptjs": "^3.0.2",
     "jose": "^6.0.10",
     "resend": "^4.5.0",
-    "stripe": "^18.1.0"
+    "stripe": "^18.1.0",
+    "@fullcalendar/core": "^6.1.0",
+    "@fullcalendar/daygrid": "^6.1.0",
+    "@fullcalendar/timegrid": "^6.1.0",
+    "@fullcalendar/interaction": "^6.1.0",
+    "@fullcalendar/react": "^6.1.0"
   },
   "prisma": {
     "seed": "node prisma/seed.js"
@@ -31,7 +36,6 @@
     "typescript": "^5.8.0",
     "@types/node": "^22.15.0",
     "@types/react": "^19.1.0",
-    "@types/react-dom": "^19.1.0",
-    "@types/bcryptjs": "^3.0.0"
+    "@types/react-dom": "^19.1.0"
   }
 }
