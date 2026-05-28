@@ -4,7 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev -p 6003",
-    "build": "next build",
+    "postinstall": "prisma generate",
+    "build": "prisma generate && next build",
     "start": "next start",
     "lint": "next lint"
   },
@@ -22,6 +23,9 @@
     "jose": "^6.0.10",
     "resend": "^4.5.0",
     "stripe": "^18.1.0"
+  },
+  "prisma": {
+    "seed": "node prisma/seed.js"
   },
   "devDependencies": {
     "typescript": "^5.8.0",
