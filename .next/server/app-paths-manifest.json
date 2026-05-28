@@ -1,8 +1,0 @@
-{
-  "/(marketing)/instructor/page": "app/(marketing)/instructor/page.js",
-  "/(marketing)/instructor/register/page": "app/(marketing)/instructor/register/page.js",
-  "/(auth)/login/page": "app/(auth)/login/page.js",
-  "/(marketing)/instructor/register-success/page": "app/(marketing)/instructor/register-success/page.js",
-  "/(marketing)/dashboard/page": "app/(marketing)/dashboard/page.js",
-  "/(marketing)/dashboard/instructor/page": "app/(marketing)/dashboard/instructor/page.js"
-}
