@@ -9,7 +9,7 @@ import { DVSA_SWAP_PHONE } from "@/features/movemytest/constants";
 export const metadata: Metadata = {
   title: "MoveMyTest for Driving Instructors",
   description: "How MoveMyTest helps driving instructors support learners, check swap suitability, manage ADI-linked listings, and keep test swaps safe and free.",
-  alternates: { canonical: "http://localhost:6003/instructor" },
+  alternates: { canonical: "https://movemytest.co.uk/instructor" },
   openGraph: {
     title: "MoveMyTest for Driving Instructors",
     description: "A plain-English guide for ADIs: what MoveMyTest is, how it works, and how it helps instructors and learners.",

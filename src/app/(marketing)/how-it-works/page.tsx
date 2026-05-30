@@ -7,7 +7,7 @@ import { DVSA_SWAP_PHONE } from "@/features/movemytest/constants";
 export const metadata: Metadata = {
   title: "How MoveMyTest Works",
   description: "A plain-English guide to learner driving test swaps, DVSA rules, privacy safeguards and when a swap cannot go ahead.",
-  alternates: { canonical: "http://localhost:6003/how-it-works" },
+  alternates: { canonical: "https://movemytest.co.uk/how-it-works" },
   openGraph: {
     title: "How MoveMyTest Works",
     description: "A plain-English guide to learner driving test swaps, DVSA rules, privacy safeguards and when a swap cannot go ahead.",

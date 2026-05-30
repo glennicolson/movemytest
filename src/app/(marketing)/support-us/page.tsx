@@ -8,7 +8,7 @@ const PAYPAL_DONATE_URL = "https://www.paypal.com/donate/?hosted_button_id=7ZKTG
 export const metadata: Metadata = {
   title: "Support MoveMyTest",
   description: "Make an optional one-off contribution to help keep MoveMyTest free for learners.",
-  alternates: { canonical: "http://localhost:6003/support-us" },
+  alternates: { canonical: "https://movemytest.co.uk/support-us" },
   robots: { index: false, follow: true },
 };
 

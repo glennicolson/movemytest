@@ -13,7 +13,7 @@ export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
   title: "Driving MoveMyTest Test Centres Directory",
   description: "Browse MoveMyTest centres by region, county, centre name, town, city or postcode, with DVSA practical car pass-rate context where available.",
-  alternates: { canonical: "http://localhost:6003/test-centres" },
+  alternates: { canonical: "https://movemytest.co.uk/test-centres" },
   openGraph: {
     title: "Driving MoveMyTest Test Centres Directory",
     description: "Browse all UK driving test centres for MoveMyTest by region, with DVSA pass-rate context where available.",
