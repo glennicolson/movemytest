@@ -6,11 +6,13 @@ import { useState } from "react";
 import { StatusPill } from "@/components/movemytest/status-pill";
 import { DIRECTION_LABELS } from "@/features/movemytest/constants";
 
-function formatDateTime(value: Date) {
+function formatDateTime(value: Date | null | undefined) {
+  if (!value || isNaN(value.getTime())) return "Date not set";
   return new Intl.DateTimeFormat("en-GB", { dateStyle: "medium", timeStyle: "short", timeZone: "Europe/London" }).format(value);
 }
 
-function formatDate(value: Date) {
+function formatDate(value: Date | null | undefined) {
+  if (!value || isNaN(value.getTime())) return "Date not set";
   return new Intl.DateTimeFormat("en-GB", { dateStyle: "medium", timeZone: "Europe/London" }).format(value);
 }
 
