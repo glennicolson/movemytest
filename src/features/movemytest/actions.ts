@@ -213,6 +213,16 @@ export async function createMoveMyTestListingAction(_: MoveMyTestActionState, fo
 export async function pauseMoveMyTestListingAction(formData: FormData) {
   const session = await requireMoveMyTestSession();
   const listingId = String(formData.get("listingId") ?? "");
+  
+  // Prevent pausing DTC shadow listings
+  const listing = await prisma.listing.findFirst({
+    where: { id: listingId, accountId: session.accountId },
+    select: { source: true },
+  });
+  if (listing?.source === "DTC") {
+    throw new Error("Cannot pause DTC Network listings from MoveMyTest.");
+  }
+  
   await prisma.listing.updateMany({ where: { id: listingId, accountId: session.accountId }, data: { status: "PAUSED" } });
   revalidatePath(`${TEST_SWAP_BASE_PATH}/dashboard`);
 }
@@ -221,6 +231,15 @@ export async function deleteMoveMyTestListingAction(formData: FormData) {
   const session = await requireMoveMyTestSession();
   const listingId = String(formData.get("listingId") ?? "");
   const now = new Date();
+
+  // Prevent deleting DTC shadow listings
+  const listing = await prisma.listing.findFirst({
+    where: { id: listingId, accountId: session.accountId },
+    select: { source: true },
+  });
+  if (listing?.source === "DTC") {
+    throw new Error("Cannot delete DTC Network listings from MoveMyTest.");
+  }
 
 // Soft-delete the listing
   await prisma.listing.updateMany({ where: { id: listingId, accountId: session.accountId }, data: { status: "DELETED" } });
@@ -448,6 +467,11 @@ export async function updateMoveMyTestLearnerRecordAction(formData: FormData): P
     where: { id: listingId, accountId: session.accountId, status: { not: "DELETED" } },
   });
   if (!listing) redirect("/dashboard/edit?status=invalid" as never);
+
+  // Prevent editing DTC shadow listings in MMT
+  if (listing.source === "DTC") {
+    redirect("/dashboard/edit?status=dtc-readonly" as never);
+  }
 
   const raw = {
     currentCentreId: String(formData.get("currentCentreId") ?? ""),

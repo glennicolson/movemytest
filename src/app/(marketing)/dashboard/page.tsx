@@ -6,6 +6,7 @@ import { DIRECTION_LABELS, TIME_PREFERENCE_LABELS } from "@/features/movemytest/
 import { formatMatchExpiryRemaining } from "@/features/movemytest/business-days";
 import { Faq } from "@/components/movemytest/dashboard-helpers";
 import { AutoDismissBanner } from "@/components/movemytest/auto-dismiss-banner";
+import { DtcNetworkBadge } from "@/components/movemytest/dtc-network-badge";
 
 export default async function MoveMyTestDashboardOverviewPage({
   searchParams,
@@ -187,9 +188,10 @@ export default async function MoveMyTestDashboardOverviewPage({
                   })()}
                 </h3>
                 <div className="mt-3 space-y-3">
-                  {matches.map(({ match, otherCentre }) => {
+                  {matches.map(({ match, otherListing, otherCentre }) => {
                     const isDeclined = match.status === "DECLINED";
                     const isExpired = match.status === "EXPIRED";
+                    const isDtc = otherListing?.source === "DTC";
                     return (
                       <div key={match.id} className={`flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between ${isDeclined || isExpired ? "opacity-50" : ""}`}>
                         <Link
@@ -198,23 +200,26 @@ export default async function MoveMyTestDashboardOverviewPage({
                         >
                           {otherCentre.name} · Match quality {match.score}/100
                         </Link>
-                        {match.status === "PROPOSED" && match.expiresAt ? (
-                          <span className="inline-flex items-center rounded-full bg-amber-200 px-2 py-0.5 text-xs font-semibold text-amber-900">
-                            Expires: {formatMatchExpiryRemaining(match.expiresAt)}
-                          </span>
-                        ) : isDeclined ? (
-                          <span className="inline-flex items-center rounded-full bg-red-100 px-2 py-0.5 text-xs font-semibold text-red-800">
-                            Declined
-                          </span>
-                        ) : isExpired ? (
-                          <span className="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-600">
-                            Expired
-                          </span>
-                        ) : (
-                          <span className="text-xs text-amber-800 capitalize">
-                            {match.status.toLowerCase().replaceAll("_", " ")}
-                          </span>
-                        )}
+                        <div className="flex items-center gap-2">
+                          {isDtc && <DtcNetworkBadge />}
+                          {match.status === "PROPOSED" && match.expiresAt ? (
+                            <span className="inline-flex items-center rounded-full bg-amber-200 px-2 py-0.5 text-xs font-semibold text-amber-900">
+                              Expires: {formatMatchExpiryRemaining(match.expiresAt)}
+                            </span>
+                          ) : isDeclined ? (
+                            <span className="inline-flex items-center rounded-full bg-red-100 px-2 py-0.5 text-xs font-semibold text-red-800">
+                              Declined
+                            </span>
+                          ) : isExpired ? (
+                            <span className="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-600">
+                              Expired
+                            </span>
+                          ) : (
+                            <span className="text-xs text-amber-800 capitalize">
+                              {match.status.toLowerCase().replaceAll("_", " ")}
+                            </span>
+                          )}
+                        </div>
                       </div>
                     );
                   })}
