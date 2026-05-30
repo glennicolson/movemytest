@@ -1,6 +1,5 @@
 <?php
-// DTC -> MMT Sync - DEBUG VERSION
-// Run: php /home/u385361430/scripts/sync-debug.php
+// DTC -> MMT Sync - DEBUG VERSION (v2)
 
 // ── Debug: Show current time ──
 echo "[Sync] Starting at " . date('Y-m-d H:i:s') . "\n";
@@ -15,7 +14,15 @@ if (file_exists($envFile)) {
     echo "[Sync] .env has " . count($lines) . " lines\n";
     foreach ($lines as $line) {
         if (strpos($line, '=') !== false && strpos($line, '#') !== 0) {
+            // Strip quotes from value
+            $line = trim($line);
+            $line = trim($line, '"\'');
             putenv($line);
+            list($key, $value) = explode('=', $line, 2);
+            $value = trim($value, '"\'');
+            $_ENV[$key] = $value;
+            $_SERVER[$key] = $value;
+            echo "[Sync] Set env: $key=" . substr($value, 0, 50) . "...\n";
         }
     }
 }
@@ -47,8 +54,8 @@ function parseDbUrl($url) {
 $dtc = parseDbUrl($dtcUrl);
 $mmt = parseDbUrl($mmtUrl);
 
-echo "[Sync] DTC DB: {$dtc['db']} on {$dtc['host']}:{$dtc['port']}\n";
-echo "[Sync] MMT DB: {$mmt['db']} on {$mmt['host']}:{$mmt['port']}\n";
+echo "[Sync] DTC DB: {$dtc['db']} | user={$dtc['user']} | host={$dtc['host']}\n";
+echo "[Sync] MMT DB: {$mmt['db']} | user={$mmt['user']} | host={$mmt['host']}\n";
 
 // ── Connect ──
 try {
