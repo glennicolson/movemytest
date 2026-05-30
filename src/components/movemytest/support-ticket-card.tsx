@@ -1,9 +1,11 @@
 import { StatusPill } from "@/components/movemytest/status-pill";
 import type { ReportWithDetails } from "@/features/movemytest/support-types";
 
-function formatDateTime(value: Date | null | undefined) {
-  if (!value || isNaN(value.getTime())) return "Date not set";
-  return new Intl.DateTimeFormat("en-GB", { dateStyle: "medium", timeStyle: "short", timeZone: "Europe/London" }).format(value);
+function formatDateTime(value: Date | string | null | undefined) {
+  if (!value) return "Date not set";
+  const d = typeof value === "string" ? new Date(value) : value;
+  if (isNaN(d.getTime())) return "Invalid date";
+  return new Intl.DateTimeFormat("en-GB", { dateStyle: "medium", timeStyle: "short", timeZone: "Europe/London" }).format(d);
 }
 
 export function SupportTicketCard({ report }: { report: ReportWithDetails }) {

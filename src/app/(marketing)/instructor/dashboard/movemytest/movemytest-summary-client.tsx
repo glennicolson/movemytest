@@ -19,9 +19,11 @@ import { VisibilityBadge } from "@/components/instructor/visibility-badge";
 
 type DashboardData = Awaited<ReturnType<typeof import("@/components/movemytest/instructor-dashboard-sections").getInstructorDashboardData>>;
 
-function formatDate(value: Date | null | undefined) {
-  if (!value || isNaN(value.getTime())) return "Date not set";
-  return new Intl.DateTimeFormat("en-GB", { dateStyle: "medium", timeStyle: "short", timeZone: "Europe/London" }).format(value);
+function formatDate(value: Date | string | null | undefined) {
+  if (!value) return "Date not set";
+  const d = typeof value === "string" ? new Date(value) : value;
+  if (isNaN(d.getTime())) return "Invalid date";
+  return new Intl.DateTimeFormat("en-GB", { dateStyle: "medium", timeStyle: "short", timeZone: "Europe/London" }).format(d);
 }
 
 function statusTone(status: string) {

@@ -8,14 +8,18 @@ import { recordMoveMyTestInstructorAvailabilityAction, updateMoveMyTestInstructo
 import { getCalendarEvents } from "@/features/calendar/queries";
 import type { CalendarEvent } from "@/features/calendar/queries";
 
-function formatDateTime(value: Date | null | undefined) {
-  if (!value || isNaN(value.getTime())) return "Date not set";
-  return new Intl.DateTimeFormat("en-GB", { dateStyle: "medium", timeStyle: "short", timeZone: "Europe/London" }).format(value);
+function formatDateTime(value: Date | string | null | undefined) {
+  if (!value) return "Date not set";
+  const d = typeof value === "string" ? new Date(value) : value;
+  if (isNaN(d.getTime())) return "Invalid date";
+  return new Intl.DateTimeFormat("en-GB", { dateStyle: "medium", timeStyle: "short", timeZone: "Europe/London" }).format(d);
 }
 
-function formatDate(value: Date | null | undefined) {
-  if (!value || isNaN(value.getTime())) return "Date not set";
-  return new Intl.DateTimeFormat("en-GB", { dateStyle: "medium", timeZone: "Europe/London" }).format(value);
+function formatDate(value: Date | string | null | undefined) {
+  if (!value) return "Date not set";
+  const d = typeof value === "string" ? new Date(value) : value;
+  if (isNaN(d.getTime())) return "Invalid date";
+  return new Intl.DateTimeFormat("en-GB", { dateStyle: "medium", timeZone: "Europe/London" }).format(d);
 }
 
 function humanise(value: string) {
