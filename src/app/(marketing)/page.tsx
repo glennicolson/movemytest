@@ -3,7 +3,7 @@ import Link from "next/link";
 import { ArrowRight, CheckCircle2, CreditCard, Eye, LockKeyhole, PhoneCall, ShieldCheck, UsersRound } from "lucide-react";
 import { JsonLd } from "@/components/seo/json-ld";
 import { TrustpilotTrustBox } from "@/components/reviews/trustpilot-trustbox";
-import { breadcrumbSchema, faqSchema } from "@/components/seo/schemas";
+import { breadcrumbSchema, faqSchema, organizationSchema, websiteSchema, moveMyTestServiceSchema } from "@/components/seo/schemas";
 import { DVSA_SWAP_PHONE } from "@/features/movemytest/constants";
 
 export const metadata: Metadata = {
@@ -37,6 +37,9 @@ const faqs = [
 export default function MoveMyTestLandingPage() {
   return (
     <>
+      <JsonLd data={organizationSchema()} />
+      <JsonLd data={websiteSchema()} />
+      <JsonLd data={moveMyTestServiceSchema()} />
       <JsonLd data={breadcrumbSchema([{ name: "Home", href: "/" }])} />
       <JsonLd data={faqSchema([{ category: "MoveMyTest", items: faqs }])} />
       <div className="bg-white">
