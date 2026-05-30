@@ -10,6 +10,16 @@ export const metadata: Metadata = {
   title: "Sign In to MoveMyTest",
   description: "Sign in to your free MoveMyTest account to manage your listing, mobile alerts and learner-to-learner matches.",
   robots: { index: false, follow: false },
+  openGraph: {
+    title: "Sign In to MoveMyTest",
+    description: "Sign in to your free MoveMyTest account to manage your listing, mobile alerts and learner-to-learner matches.",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Sign In to MoveMyTest",
+    description: "Sign in to your free MoveMyTest account to manage your listing, mobile alerts and learner-to-learner matches.",
+  },
 };
 
 export default async function MoveMyTestLoginPage({ searchParams }: { searchParams: Promise<{ from?: string }> }) {

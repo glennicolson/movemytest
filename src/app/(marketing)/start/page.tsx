@@ -10,6 +10,16 @@ export const metadata: Metadata = {
   title: "Start a Free MoveMyTest Listing",
   description: "Create a private MoveMyTest listing with the minimum details needed to find compatible learner-to-learner practical car test swaps.",
   robots: { index: false, follow: false },
+  openGraph: {
+    title: "Start a Free MoveMyTest Listing",
+    description: "Create a private MoveMyTest listing with the minimum details needed to find compatible learner-to-learner practical car test swaps.",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Start a Free MoveMyTest Listing",
+    description: "Create a private MoveMyTest listing with the minimum details needed to find compatible learner-to-learner practical car test swaps.",
+  },
 };
 
 export default async function MoveMyTestStartPage({

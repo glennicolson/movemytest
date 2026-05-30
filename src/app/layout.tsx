@@ -8,6 +8,12 @@ export const metadata: Metadata = {
   metadataBase: new URL("https://movemytest.co.uk"),
   title: "MoveMyTest",
   description: "Free driving test swap service — find compatible learners to exchange DVSA driving test bookings.",
+  alternates: {
+    canonical: "https://movemytest.co.uk",
+    languages: {
+      "en-GB": "https://movemytest.co.uk",
+    },
+  },
   icons: {
     icon: [
       { url: "/favicon-32x32.png", sizes: "32x32", type: "image/png" },

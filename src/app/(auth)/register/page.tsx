@@ -11,6 +11,16 @@ export const metadata: Metadata = {
   title: "Create Your MoveMyTest Account",
   description: "Register for a free MoveMyTest account to save your test details, manage matches and use the official DVSA phone swap process safely.",
   robots: { index: false, follow: false },
+  openGraph: {
+    title: "Create Your MoveMyTest Account",
+    description: "Register for a free MoveMyTest account to save your test details, manage matches and use the official DVSA phone swap process safely.",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Create Your MoveMyTest Account",
+    description: "Register for a free MoveMyTest account to save your test details, manage matches and use the official DVSA phone swap process safely.",
+  },
 };
 
 function CheckIcon() {

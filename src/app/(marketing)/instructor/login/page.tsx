@@ -7,6 +7,16 @@ export const metadata: Metadata = {
   title: "MoveMyTest Instructor Login",
   description: "Instructor sign in for managing MoveMyTest requests linked to an ADI number.",
   robots: { index: false, follow: false },
+  openGraph: {
+    title: "MoveMyTest Instructor Login",
+    description: "Instructor sign in for managing MoveMyTest requests linked to an ADI number.",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "MoveMyTest Instructor Login",
+    description: "Instructor sign in for managing MoveMyTest requests linked to an ADI number.",
+  },
 };
 
 export default async function MoveMyTestInstructorLoginPage({

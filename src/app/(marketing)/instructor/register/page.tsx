@@ -7,6 +7,16 @@ export const metadata: Metadata = {
   title: "Register as a MoveMyTest Instructor",
   description: "Create an instructor account to manage MoveMyTest requests linked to your ADI number.",
   robots: { index: false, follow: false },
+  openGraph: {
+    title: "Register as a MoveMyTest Instructor",
+    description: "Create an instructor account to manage MoveMyTest requests linked to your ADI number.",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Register as a MoveMyTest Instructor",
+    description: "Create an instructor account to manage MoveMyTest requests linked to your ADI number.",
+  },
 };
 
 export default function MoveMyTestInstructorRegisterPage() {
