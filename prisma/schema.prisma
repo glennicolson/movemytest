@@ -137,6 +137,9 @@ model TestCentre {
 model Listing {
   id                        String              @id @default(cuid())
   accountId                 String?
+  source                    ListingSource       @default(MMT)
+  dtcListingId              String?
+  dtcUserEmail              String?
   currentCentreId           String
   originalCentreId          String?
   currentDateTime           DateTime
@@ -168,6 +171,8 @@ model Listing {
   @@index([currentCentreId, status])
   @@index([jurisdiction, status])
   @@index([currentDateTime])
+  @@index([source])
+  @@index([dtcListingId])
 }
 
 // ── Instructor Account ──
@@ -542,6 +547,11 @@ enum ListingStatus {
   EXPIRED
   DELETED
   BANNED
+}
+
+enum ListingSource {
+  MMT
+  DTC
 }
 
 enum MatchStatus {
