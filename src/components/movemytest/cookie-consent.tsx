@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from "react";
 
-// Google Analytics Measurement ID — replace with your actual GA4 ID
-const GA_MEASUREMENT_ID = process.env.NEXT_PUBLIC_GA_ID || "G-XXXXXXXXXX";
+// Google Analytics Measurement ID
+const GA_MEASUREMENT_ID = process.env.NEXT_PUBLIC_GA_ID || "G-ZLF60F38FQ";
 
 type ConsentState = {
   analytics: boolean;
