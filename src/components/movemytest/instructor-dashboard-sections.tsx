@@ -8,11 +8,13 @@ import { recordMoveMyTestInstructorAvailabilityAction, updateMoveMyTestInstructo
 import { getCalendarEvents } from "@/features/calendar/queries";
 import type { CalendarEvent } from "@/features/calendar/queries";
 
-function formatDateTime(value: Date) {
+function formatDateTime(value: Date | null | undefined) {
+  if (!value || isNaN(value.getTime())) return "Date not set";
   return new Intl.DateTimeFormat("en-GB", { dateStyle: "medium", timeStyle: "short", timeZone: "Europe/London" }).format(value);
 }
 
-function formatDate(value: Date) {
+function formatDate(value: Date | null | undefined) {
+  if (!value || isNaN(value.getTime())) return "Date not set";
   return new Intl.DateTimeFormat("en-GB", { dateStyle: "medium", timeZone: "Europe/London" }).format(value);
 }
 
