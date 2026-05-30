@@ -7,19 +7,19 @@ import { breadcrumbSchema, faqSchema, organizationSchema, websiteSchema, moveMyT
 import { DVSA_SWAP_PHONE } from "@/features/movemytest/constants";
 
 export const metadata: Metadata = {
-  title: "MoveMyTest — Free, Privacy-First Driving MoveMyTests",
+  title: "MoveMyTest — Free, Privacy-First Driving Test Swaps",
   description: "The free, private, and DVSA-compliant driving test swap platform. No bots, no card required, and no public exposure — just real learner-to-learner matching with your instructor in the loop.",
   keywords: ["driving test swap", "DVSA test swap", "learner test exchange", "driving test date swap", "free test swap", "practical test swap", "MoveMyTest"],
   alternates: { canonical: "/" },
   openGraph: {
-    title: "MoveMyTest — Free, Privacy-First Driving MoveMyTests",
+    title: "MoveMyTest — Free, Privacy-First Driving Test Swaps",
     description: "The free, private, and DVSA-compliant driving test swap platform. No bots, no card required, and no public exposure — just real learner-to-learner matching with your instructor in the loop.",
     url: "/",
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "MoveMyTest — Free, Privacy-First Driving MoveMyTests",
+    title: "MoveMyTest — Free, Privacy-First Driving Test Swaps",
     description: "Free, private, and DVSA-compliant learner-to-learner test matching. No bots, no card needed, no public exposure.",
     images: ["/opengraph-image"],
   },

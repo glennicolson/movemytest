@@ -7,7 +7,7 @@ import { breadcrumbSchema, faqSchema } from "@/components/seo/schemas";
 import { DVSA_SWAP_PHONE } from "@/features/movemytest/constants";
 
 export const metadata: Metadata = {
-  title: "Why Use MoveMyTest | Free Driving MoveMyTests",
+  title: "Why Use MoveMyTest | Free Driving Test Swaps",
   description: "Why MoveMyTest is free, why learners should not pay for driving test swaps, and how MoveMyTest helps learners find fair learner-to-learner matches safely.",
   alternates: { canonical: "https://movemytest.co.uk/why-use-the-dtc-movemytest" },
   openGraph: {

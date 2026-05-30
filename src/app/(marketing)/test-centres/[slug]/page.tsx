@@ -37,13 +37,13 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   if (!data) return { title: "Test swap centre not found" };
   if (data.kind === "region") {
     return {
-      title: `${data.region.name} Driving MoveMyTests`,
+      title: `${data.region.name} Driving Test Swaps`,
       description: `Browse practical driving test centres in ${data.region.name} by county, with aggregate MoveMyTest listing counts and DVSA pass-rate context where available.`,
       alternates: { canonical: `/test-centres/${slug}` },
     };
   }
   return {
-    title: `${data.centre.name} Driving MoveMyTests`,
+    title: `${data.centre.name} Driving Test Swaps`,
       description: `Find learner-to-learner practical driving test swap matches for ${data.centre.name}. Public centre pages show aggregate counts only.`,
     alternates: { canonical: `/test-centres/${slug}` },
   };
