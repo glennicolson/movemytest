@@ -19,7 +19,8 @@ import { VisibilityBadge } from "@/components/instructor/visibility-badge";
 
 type DashboardData = Awaited<ReturnType<typeof import("@/components/movemytest/instructor-dashboard-sections").getInstructorDashboardData>>;
 
-function formatDate(value: Date) {
+function formatDate(value: Date | null | undefined) {
+  if (!value || isNaN(value.getTime())) return "Date not set";
   return new Intl.DateTimeFormat("en-GB", { dateStyle: "medium", timeStyle: "short", timeZone: "Europe/London" }).format(value);
 }
 

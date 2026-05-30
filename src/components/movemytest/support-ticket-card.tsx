@@ -1,7 +1,8 @@
 import { StatusPill } from "@/components/movemytest/status-pill";
 import type { ReportWithDetails } from "@/features/movemytest/support-types";
 
-function formatDateTime(value: Date) {
+function formatDateTime(value: Date | null | undefined) {
+  if (!value || isNaN(value.getTime())) return "Date not set";
   return new Intl.DateTimeFormat("en-GB", { dateStyle: "medium", timeStyle: "short", timeZone: "Europe/London" }).format(value);
 }
 

@@ -57,7 +57,7 @@ export async function getInstructorSupportTickets() {
     },
     orderBy: [{ createdAt: "desc" }],
     include: {
-      responses: { orderBy: { createdAt: "asc" }, include: { author: { select: { firstName: true, lastName: true } } } },
+      responses: { orderBy: { createdAt: "asc" }, include: { author: { select: { email: true } } } },
       reporterMoveMyTestAccount: { select: { email: true } },
       listing: { select: { currentCentre: { select: { name: true } } } },
       match: true,
