@@ -6,7 +6,7 @@
 echo "[Sync] Starting at " . date('Y-m-d H:i:s') . "\n";
 
 // ── Load .env ──
-$envFile = '/home/u385361430/domains/movemytest.co.uk/nodejs/.env';
+$envFile = '/home/u385361430/domains/movemytest.co.uk/public_html/.builds/config/.env';
 echo "[Sync] Loading .env from: $envFile\n";
 echo "[Sync] File exists: " . (file_exists($envFile) ? 'YES' : 'NO') . "\n";
 
