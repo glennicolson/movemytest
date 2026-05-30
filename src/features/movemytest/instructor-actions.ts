@@ -218,7 +218,7 @@ export async function registerMoveMyTestInstructorAction(_: MoveMyTestInstructor
   });
 
 // Send verification email
-  const verifyUrl = `${appConfig.publicAppUrl}/movemytest/instructor/verify-email?token=${encodeURIComponent(verificationToken)}`;
+  const verifyUrl = `${appConfig.publicAppUrl}/instructor/verify-email?token=${encodeURIComponent(verificationToken)}`;
   try {
     await sendInstructorVerificationEmail({ to: email, firstName, verifyUrl });
   } catch {
@@ -532,7 +532,7 @@ export async function resendMoveMyTestInstructorVerificationAction(
     },
   });
 
-  const verifyUrl = `${appConfig.publicAppUrl}/movemytest/instructor/verify-email?token=${encodeURIComponent(verificationToken)}`;
+  const verifyUrl = `${appConfig.publicAppUrl}/instructor/verify-email?token=${encodeURIComponent(verificationToken)}`;
   try {
     await sendInstructorVerificationEmail({ to: email, firstName: account.firstName, verifyUrl });
   } catch {

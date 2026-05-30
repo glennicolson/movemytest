@@ -1,89 +1,72 @@
 # MoveMyTest
 
-A standalone spin-off project from The DTC's Test Swap feature. MoveMyTest is a free driving test swap service that helps learners find compatible matches to exchange DVSA driving test bookings.
+**Standalone test date swapping service for learner drivers.**
 
-## Origin
+## Overview
 
-This project was extracted from the main DTC (Driver Training Centre) codebase, specifically the `test-swap` feature. All existing DTC Test Swap functionality has been preserved and rebranded as MoveMyTest.
+MoveMyTest is a standalone web application that allows learner drivers to swap their driving test dates with other learners. Originally part of the DTC (Driver Training Centre) ecosystem, it is being separated into an independent service to serve both DTC learners and independent instructors equally.
 
-## What's Included
+## Architecture
 
-- **Learner Portal**: Registration, login, dashboard, test swap listings, matches
-- **Instructor Portal**: Instructor registration, dashboard, learner linking, calendar
-- **Admin Dashboard**: Staff overview of all test swap activity
-- **API Routes**: Backend handlers for matches, auth, support tickets, etc.
-- **Marketing Pages**: Home, how-it-works, test centres, support
+MoveMyTest operates as a completely standalone service:
+- **Own database** (MySQL on port 3309)
+- **Own codebase** (Next.js app in `/movemytest`)
+- **Own deployment** (separate from DTC)
+- **Shared match pool** (via shadow sync with DTC — see `MMT_SHARED_POOL_PLAN.md`)
 
 ## Tech Stack
 
-- Next.js 15
-- React 19
-- TypeScript
-- Tailwind CSS
-- Prisma (database ORM)
-- Resend (email)
-- Stripe (payments - if needed for contributions)
+- **Framework:** Next.js 15
+- **Database:** MySQL + Prisma ORM
+- **Auth:** Custom auth (email/password)
+- **Styling:** Tailwind CSS
+- **Deployment:** Hostinger (planned)
 
-## Getting Started
+## Database
+
+Located at `prisma/schema.prisma` — completely independent from DTC schema.
+
+Key models:
+- `LearnerAccount` — user accounts
+- `Listing` — test date listings
+- `MatchEvent` — swap matches
+- `TestCentre` — UK test centres (shared data)
+
+## Shared Match Pool (Future)
+
+See `MMT_SHARED_POOL_PLAN.md` for the phased plan to integrate with DTC's test swap data without compromising independence.
+
+## Development
 
 ```bash
-# Install dependencies
+cd /Users/glennicolson/.openclaw/workspace/movemytest
 npm install
-
-# Set up environment variables
-cp .env.example .env.local
-# Edit .env.local with your database credentials, Resend API key, etc.
-
-# Run database migrations
-npx prisma migrate dev
-
-# Start development server
-npm run dev
+npx prisma generate
+npm run dev  # Runs on default Next.js port
 ```
 
-The dev server runs on port 6003 by default.
+## Status
 
-## Important Notes
+- ✅ Prisma schema extracted from DTC (TestSwap tables isolated)
+- ✅ Basic Next.js app structure in place
+- ✅ Database connection configured
+- ⬜ Phase 1: Full standalone functionality
+- ⬜ Phase 2: Shared match pool sync
+- ⬜ Phase 3+: See `MMT_SHARED_POOL_PLAN.md`
 
-- This project uses **its own session cookies** (`movemytest_session`, `movemytest_instructor_session`, etc.) so it does not conflict with DTC sessions.
-- The database schema is shared with DTC for now (same Prisma schema). If you need full separation, copy the schema and create a new database.
-- All branding references to "The DTC Test Swap" have been replaced with "MoveMyTest".
+## Decision: Shared Pool Strategy
 
-## Project Structure
+**Chosen approach:** Option A — Shadow sync table
+- DTC test swap data stays in DTC
+- MoveMyTest gets its own database
+- Shared `mmt_listings` table aggregates listings from both platforms
+- Independent instructors never see DTC branding
+- DTC learners benefit from larger swap network
 
-```
-movemytest/
-├── src/
-│   ├── app/              # Next.js routes
-│   │   ├── (marketing)/movemytest/    # Marketing pages
-│   │   ├── (auth)/movemytest/         # Auth pages (login, register, etc.)
-│   │   ├── (staff)/dashboard/movemytest/  # Admin dashboard
-│   │   └── api/movemytest/            # API routes
-│   ├── components/
-│   │   ├── movemytest/   # MoveMyTest-specific components
-│   │   ├── ui/           # Shared UI components
-│   │   ├── layout/       # Layout components
-│   │   └── ...           # Other shared components
-│   ├── features/
-│   │   ├── movemytest/   # Core MoveMyTest logic (auth, matching, sessions)
-│   │   ├── crm/          # CRM helpers
-│   │   ├── calendar/     # Calendar feature
-│   │   └── ...           # Other features
-│   ├── lib/              # Utilities, database, auth guards
-│   ├── hooks/            # React hooks
-│   └── types/            # TypeScript types
-├── prisma/               # Database schema
-├── public/               # Static assets
-└── ...                   # Config files
-```
+See `MMT_SHARED_POOL_PLAN.md` for full implementation plan.
 
-## Differences from DTC
+---
 
-- Standalone project with no DTC CRM, instructor management, or learner portal dependencies
-- Own branding and identity
-- Can be deployed independently
-- Session isolation from DTC
-
-## License
-
-Same as parent DTC project.
+**Decision Date:** 2026-05-30  
+**Decision Maker:** Glen  
+**Plan Author:** Jarvis
