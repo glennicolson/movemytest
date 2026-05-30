@@ -15,7 +15,8 @@ import { requireMoveMyTestInstructorSession, TEST_SWAP_INSTRUCTOR_SESSION_COOKIE
 import { requireReadyMoveMyTestSession } from "./session";
 import { getMailboxConfig } from "@/lib/communications/config";
 import { appConfig } from "@/lib/config/app";
-import { ensureinstructorAccountForCrmInstructor } from "./crm-bridge";
+// import { ensureinstructorAccountForCrmInstructor } from "./crm-bridge";
+// Disabled for standalone MoveMyTest
 import type { PasswordResetEmailRequestActionState } from "@/lib/auth/form-state";
 
 function generateInviteToken() {
@@ -261,7 +262,8 @@ export async function loginMoveMyTestInstructorAction(_: MoveMyTestInstructorAut
     }
   }
 
-// 2. Fall back: check if they are a DTC CRM instructor
+// 2. Fall back: check if they are a DTC CRM instructor (disabled for standalone MoveMyTest)
+  /*
   const crmInstructor = await prisma.user.findUnique({
     where: { email: parsed.data.email },
     include: { instructorProfile: true },
@@ -289,6 +291,7 @@ export async function loginMoveMyTestInstructorAction(_: MoveMyTestInstructorAut
 
     redirect("/instructor/dashboard" as never);
   }
+  */
 
   return { status: "error", message: "Email or password is incorrect." };
 }
@@ -632,7 +635,7 @@ export async function getInstructorSentInvites() {
     orderBy: { createdAt: "desc" },
     take: 50,
     include: {
-      claimedByMoveMyTestAccount: { select: { email: true } },
+      claimedByAccount: { select: { email: true } },
     },
   });
 }

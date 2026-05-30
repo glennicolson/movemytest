@@ -374,7 +374,7 @@ export async function declineMoveMyTestMatchAction(formData: FormData) {
       status: { in: ["PROPOSED", "LEARNER_A_ACCEPTED", "LEARNER_B_ACCEPTED", "BOTH_ACCEPTED", "CALLER_PENDING", "BOOKING_REFERENCE_CONSENT_REQUESTED", "BOOKING_REFERENCE_SHARED"] },
       OR: [{ listingA: { accountId: session.accountId } }, { listingB: { accountId: session.accountId } }],
     },
-    include: { listingA: { include: { movemytestAccount: { select: { email: true } } } }, listingB: { include: { movemytestAccount: { select: { email: true } } } } },
+    include: { listingA: { include: { account: { select: { email: true } } } }, listingB: { include: { account: { select: { email: true } } } } },
   });
   if (!match) return;
 

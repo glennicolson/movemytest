@@ -133,7 +133,7 @@ export function evaluatePotentialMatch(a: MatchListing, b: MatchListing, centres
 export async function runMatchingForListing(listingId: string) {
   const listing = await prisma.listing.findUnique({
     where: { id: listingId, status: "ACTIVE" },
-    include: { movemytestAccount: { select: { email: true } } },
+    include: { account: { select: { email: true } } },
   });
   if (!listing) return;
 
@@ -143,7 +143,7 @@ export async function runMatchingForListing(listingId: string) {
       status: "ACTIVE",
       accountId: { not: listing.accountId },
     },
-    include: { movemytestAccount: { select: { email: true } } },
+    include: { account: { select: { email: true } } },
   });
 
   const centres = await prisma.testCentre.findMany({

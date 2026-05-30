@@ -59,16 +59,15 @@ async function getInstructorLinks(instructorId: string, adiNumber: string) {
         include: {
           currentCentre: true,
           originalCentre: true,
-          movemytestAccount: { select: { email: true, mobileNumber: true } },
-          user: { select: { email: true, firstName: true, lastName: true } },
+          account: { select: { email: true, mobileNumber: true } },
           listingAMatches: {
             where: {
               status: { notIn: ["DECLINED", "EXPIRED", "REPORTED", "COMPLETED"] },
               listingB: { status: { not: "DELETED" } },
             },
             include: {
-              listingA: { include: { currentCentre: true, movemytestAccount: { select: { email: true, mobileNumber: true } } } },
-              listingB: { include: { currentCentre: true, movemytestAccount: { select: { email: true, mobileNumber: true } } } },
+              listingA: { include: { currentCentre: true, account: { select: { email: true, mobileNumber: true } } } },
+              listingB: { include: { currentCentre: true, account: { select: { email: true, mobileNumber: true } } } },
             },
             orderBy: { updatedAt: "desc" },
           },
@@ -78,8 +77,8 @@ async function getInstructorLinks(instructorId: string, adiNumber: string) {
               listingA: { status: { not: "DELETED" } },
             },
             include: {
-              listingA: { include: { currentCentre: true, movemytestAccount: { select: { email: true, mobileNumber: true } } } },
-              listingB: { include: { currentCentre: true, movemytestAccount: { select: { email: true, mobileNumber: true } } } },
+              listingA: { include: { currentCentre: true, account: { select: { email: true, mobileNumber: true } } } },
+              listingB: { include: { currentCentre: true, account: { select: { email: true, mobileNumber: true } } } },
             },
             orderBy: { updatedAt: "desc" },
           },
@@ -165,7 +164,7 @@ export async function getInstructorDashboardData() {
     start: link.listing.currentDateTime,
     end: new Date(link.listing.currentDateTime.getTime() + 2 * 60 * 60 * 1000),
     status: link.listing.status,
-    pupilName: link.listing.account?.email ?? link.listing.user?.email ?? "MoveMyTest learner",
+    pupilName: link.listing.account?.email ?? "MoveMyTest learner",
     learnerId: link.listing.accountId ?? link.listing.id,
     instructorName: `${instructor.firstName} ${instructor.lastName}`,
     instructorId: instructor.id,
@@ -181,7 +180,7 @@ export async function getInstructorDashboardData() {
     start: match.otherDateTime,
     end: new Date(match.otherDateTime.getTime() + 2 * 60 * 60 * 1000),
     status: `PROPOSED_${match.status}`,
-    pupilName: link.listing.account?.email ?? link.listing.user?.email ?? "MoveMyTest learner",
+    pupilName: link.listing.account?.email ?? "MoveMyTest learner",
     learnerId: link.listing.accountId ?? link.listing.id,
     instructorName: `${instructor.firstName} ${instructor.lastName}`,
     instructorId: instructor.id,
@@ -193,15 +192,8 @@ export async function getInstructorDashboardData() {
 
   const tsEvents: CalendarEvent[] = [...currentTestEvents, ...proposedSwapEvents];
 
-// For MoveMyTest instructors, merge their full DTC calendar so they see one cohesive view
+// MoveMyTest instructor calendar view (standalone — no DTC integration)
   let dtcCalendarEvents: CalendarEvent[] = [];
-  if (instructor.crmInstructorProfileId) {
-    try {
-      dtcCalendarEvents = await getCalendarEvents(instructor.crmInstructorProfileId);
-    } catch {
-// Non-blocking: if MoveMyTest calendar fetch fails, still show MoveMyTest events
-    }
-  }
 
 // Support ticket summary
   const supportTickets = await prisma.report.findMany({
@@ -247,7 +239,7 @@ function buildLearnerCards(links: InstructorLink[]) {
 
   for (const link of links) {
     const learnerId = link.listing.accountId ?? link.listing.id;
-    const email = link.listing.account?.email ?? link.listing.user?.email ?? "Unknown learner";
+    const email = link.listing.account?.email ?? "Unknown learner";
     if (!groups.has(learnerId)) {
       groups.set(learnerId, { active: null, history: [], email });
     }

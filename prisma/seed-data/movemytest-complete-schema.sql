@@ -1,0 +1,891 @@
+-- CreateTable
+CREATE TABLE `LearnerAccount` (
+    `id` VARCHAR(191) NOT NULL,
+    `email` VARCHAR(191) NOT NULL,
+    `passwordHash` VARCHAR(191) NOT NULL,
+    `mobileNumber` VARCHAR(191) NULL,
+    `status` ENUM('ACTIVE', 'SUSPENDED', 'DELETED') NOT NULL DEFAULT 'ACTIVE',
+    `termsAcceptedAt` DATETIME(3) NOT NULL,
+    `privacyAcceptedAt` DATETIME(3) NOT NULL,
+    `officialProcessAcknowledgedAt` DATETIME(3) NOT NULL,
+    `mobileContactConsentAt` DATETIME(3) NULL,
+    `accountSetupCompletedAt` DATETIME(3) NULL,
+    `marketingConsentAt` DATETIME(3) NULL,
+    `emailVerifiedAt` DATETIME(3) NULL,
+    `lastLoginAt` DATETIME(3) NULL,
+    `resetToken` VARCHAR(191) NULL,
+    `resetTokenExpiresAt` DATETIME(3) NULL,
+    `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+    `updatedAt` DATETIME(3) NOT NULL,
+
+    UNIQUE INDEX `LearnerAccount_email_key`(`email`),
+    INDEX `LearnerAccount_status_createdAt_idx`(`status`, `createdAt`),
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `LearnerMfaFactor` (
+    `id` VARCHAR(191) NOT NULL,
+    `accountId` VARCHAR(191) NOT NULL,
+    `method` ENUM('TOTP', 'WEBAUTHN') NOT NULL,
+    `status` ENUM('PENDING', 'ACTIVE', 'DISABLED', 'REVOKED') NOT NULL DEFAULT 'PENDING',
+    `label` VARCHAR(191) NULL,
+    `isPrimary` BOOLEAN NOT NULL DEFAULT false,
+    `totpSecretEncrypted` TEXT NULL,
+    `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+    `activatedAt` DATETIME(3) NULL,
+    `revokedAt` DATETIME(3) NULL,
+
+    INDEX `LearnerMfaFactor_accountId_method_status_idx`(`accountId`, `method`, `status`),
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `LearnerBackupCode` (
+    `id` VARCHAR(191) NOT NULL,
+    `accountId` VARCHAR(191) NOT NULL,
+    `codeHash` VARCHAR(191) NOT NULL,
+    `usedAt` DATETIME(3) NULL,
+    `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+
+    UNIQUE INDEX `LearnerBackupCode_codeHash_key`(`codeHash`),
+    INDEX `LearnerBackupCode_accountId_usedAt_idx`(`accountId`, `usedAt`),
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `LearnerInvite` (
+    `id` VARCHAR(191) NOT NULL,
+    `invitedByInstructorAccountId` VARCHAR(191) NULL,
+    `claimedByAccountId` VARCHAR(191) NULL,
+    `learnerName` VARCHAR(191) NULL,
+    `email` VARCHAR(191) NOT NULL,
+    `mobileNumber` VARCHAR(191) NULL,
+    `instructorAdiNumber` VARCHAR(191) NULL,
+    `status` VARCHAR(191) NOT NULL DEFAULT 'PENDING',
+    `tokenHash` VARCHAR(191) NULL,
+    `inviteSentAt` DATETIME(3) NULL,
+    `inviteError` TEXT NULL,
+    `claimedAt` DATETIME(3) NULL,
+    `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+    `updatedAt` DATETIME(3) NOT NULL,
+
+    INDEX `LearnerInvite_email_status_idx`(`email`, `status`),
+    INDEX `LearnerInvite_invitedByInstructorAccountId_createdAt_idx`(`invitedByInstructorAccountId`, `createdAt`),
+    INDEX `LearnerInvite_claimedByAccountId_idx`(`claimedByAccountId`),
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `LearnerConsent` (
+    `id` VARCHAR(191) NOT NULL,
+    `accountId` VARCHAR(191) NOT NULL,
+    `consentType` VARCHAR(191) NOT NULL,
+    `consentVersion` VARCHAR(191) NOT NULL,
+    `acceptedAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+    `ipAddress` VARCHAR(191) NULL,
+    `userAgent` TEXT NULL,
+
+    INDEX `LearnerConsent_accountId_consentType_idx`(`accountId`, `consentType`),
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `TestCentre` (
+    `id` VARCHAR(191) NOT NULL,
+    `slug` VARCHAR(191) NOT NULL,
+    `name` VARCHAR(191) NOT NULL,
+    `addressLine1` VARCHAR(191) NULL,
+    `town` VARCHAR(191) NULL,
+    `postcode` VARCHAR(191) NULL,
+    `region` VARCHAR(191) NULL,
+    `passRate` DOUBLE NULL,
+    `latitude` DOUBLE NULL,
+    `longitude` DOUBLE NULL,
+    `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+    `updatedAt` DATETIME(3) NOT NULL,
+
+    UNIQUE INDEX `TestCentre_slug_key`(`slug`),
+    INDEX `TestCentre_region_idx`(`region`),
+    INDEX `TestCentre_slug_idx`(`slug`),
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `Listing` (
+    `id` VARCHAR(191) NOT NULL,
+    `accountId` VARCHAR(191) NULL,
+    `currentCentreId` VARCHAR(191) NOT NULL,
+    `originalCentreId` VARCHAR(191) NULL,
+    `currentDateTime` DATETIME(3) NOT NULL,
+    `bookingReferenceEncrypted` TEXT NULL,
+    `bookingReferenceIv` VARCHAR(191) NULL,
+    `bookingReferenceAuthTag` VARCHAR(191) NULL,
+    `testType` ENUM('WEEKDAY_STANDARD_CAR', 'EVENING_WEEKEND_BANK_HOLIDAY_STANDARD_CAR', 'EXTRA_TIME_SPECIAL_REQUIREMENTS', 'EXTENDED_WEEKDAY', 'EXTENDED_EVENING_WEEKEND_BANK_HOLIDAY') NOT NULL,
+    `hasRemainingChange` BOOLEAN NOT NULL,
+    `desiredDateFrom` DATETIME(3) NOT NULL,
+    `desiredDateTo` DATETIME(3) NOT NULL,
+    `desiredTimePreference` ENUM('ANY', 'MORNING', 'AFTERNOON', 'EVENING') NOT NULL DEFAULT 'ANY',
+    `desiredCentreIds` JSON NOT NULL,
+    `desiredDirection` ENUM('EARLIER', 'LATER', 'EITHER') NOT NULL,
+    `status` ENUM('ACTIVE', 'PAUSED', 'MATCHED', 'COMPLETED', 'EXPIRED', 'DELETED', 'BANNED') NOT NULL DEFAULT 'ACTIVE',
+    `jurisdiction` ENUM('GB_DVSA', 'NI_DVA') NOT NULL,
+    `expiresAt` DATETIME(3) NOT NULL,
+    `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+    `updatedAt` DATETIME(3) NOT NULL,
+
+    INDEX `Listing_accountId_status_idx`(`accountId`, `status`),
+    INDEX `Listing_currentCentreId_status_idx`(`currentCentreId`, `status`),
+    INDEX `Listing_jurisdiction_status_idx`(`jurisdiction`, `status`),
+    INDEX `Listing_currentDateTime_idx`(`currentDateTime`),
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `InstructorAccount` (
+    `id` VARCHAR(191) NOT NULL,
+    `adiNumber` VARCHAR(191) NOT NULL,
+    `firstName` VARCHAR(191) NOT NULL,
+    `lastName` VARCHAR(191) NOT NULL,
+    `email` VARCHAR(191) NOT NULL,
+    `mobileNumber` VARCHAR(191) NULL,
+    `passwordHash` VARCHAR(191) NOT NULL,
+    `status` VARCHAR(191) NOT NULL DEFAULT 'ACTIVE',
+    `emailVerifiedAt` DATETIME(3) NULL,
+    `mobileVerifiedAt` DATETIME(3) NULL,
+    `lastLoginAt` DATETIME(3) NULL,
+    `resetToken` VARCHAR(191) NULL,
+    `resetTokenExpiresAt` DATETIME(3) NULL,
+    `verificationToken` VARCHAR(191) NULL,
+    `verificationTokenExpiresAt` DATETIME(3) NULL,
+    `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+    `updatedAt` DATETIME(3) NOT NULL,
+
+    UNIQUE INDEX `InstructorAccount_adiNumber_key`(`adiNumber`),
+    UNIQUE INDEX `InstructorAccount_email_key`(`email`),
+    INDEX `InstructorAccount_adiNumber_status_idx`(`adiNumber`, `status`),
+    INDEX `InstructorAccount_email_status_idx`(`email`, `status`),
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `InstructorMfaFactor` (
+    `id` VARCHAR(191) NOT NULL,
+    `accountId` VARCHAR(191) NOT NULL,
+    `method` ENUM('TOTP', 'WEBAUTHN') NOT NULL,
+    `status` ENUM('PENDING', 'ACTIVE', 'DISABLED', 'REVOKED') NOT NULL DEFAULT 'PENDING',
+    `label` VARCHAR(191) NULL,
+    `isPrimary` BOOLEAN NOT NULL DEFAULT false,
+    `totpSecretEncrypted` TEXT NULL,
+    `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+    `activatedAt` DATETIME(3) NULL,
+    `revokedAt` DATETIME(3) NULL,
+
+    INDEX `InstructorMfaFactor_accountId_method_status_idx`(`accountId`, `method`, `status`),
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `InstructorBackupCode` (
+    `id` VARCHAR(191) NOT NULL,
+    `accountId` VARCHAR(191) NOT NULL,
+    `codeHash` VARCHAR(191) NOT NULL,
+    `usedAt` DATETIME(3) NULL,
+    `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+
+    UNIQUE INDEX `InstructorBackupCode_codeHash_key`(`codeHash`),
+    INDEX `InstructorBackupCode_accountId_usedAt_idx`(`accountId`, `usedAt`),
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `InstructorInvite` (
+    `id` VARCHAR(191) NOT NULL,
+    `listingInstructorId` VARCHAR(191) NOT NULL,
+    `instructorAccountId` VARCHAR(191) NULL,
+    `email` VARCHAR(191) NOT NULL,
+    `adiNumber` VARCHAR(191) NOT NULL,
+    `tokenHash` VARCHAR(191) NULL,
+    `status` VARCHAR(191) NOT NULL DEFAULT 'PENDING',
+    `inviteSentAt` DATETIME(3) NULL,
+    `inviteError` TEXT NULL,
+    `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+    `updatedAt` DATETIME(3) NOT NULL,
+
+    INDEX `InstructorInvite_email_status_idx`(`email`, `status`),
+    INDEX `InstructorInvite_adiNumber_status_idx`(`adiNumber`, `status`),
+    INDEX `InstructorInvite_listingInstructorId_idx`(`listingInstructorId`),
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `ListingInstructor` (
+    `id` VARCHAR(191) NOT NULL,
+    `listingId` VARCHAR(191) NOT NULL,
+    `instructorAccountId` VARCHAR(191) NULL,
+    `adiNumber` VARCHAR(191) NULL,
+    `firstName` VARCHAR(191) NULL,
+    `lastName` VARCHAR(191) NULL,
+    `email` VARCHAR(191) NULL,
+    `mobileNumber` VARCHAR(191) NULL,
+    `learnerConfirmedPermissionAt` DATETIME(3) NULL,
+    `learnerConfirmedAvailabilityCheckAt` DATETIME(3) NULL,
+    `inviteSentAt` DATETIME(3) NULL,
+    `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+    `updatedAt` DATETIME(3) NOT NULL,
+
+    UNIQUE INDEX `ListingInstructor_listingId_key`(`listingId`),
+    INDEX `ListingInstructor_adiNumber_idx`(`adiNumber`),
+    INDEX `ListingInstructor_instructorAccountId_idx`(`instructorAccountId`),
+    INDEX `ListingInstructor_email_idx`(`email`),
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `InstructorAvailabilityDecision` (
+    `id` VARCHAR(191) NOT NULL,
+    `listingInstructorId` VARCHAR(191) NOT NULL,
+    `instructorAccountId` VARCHAR(191) NULL,
+    `matchId` VARCHAR(191) NULL,
+    `slotType` ENUM('CURRENT_TEST', 'PROPOSED_SWAP') NOT NULL,
+    `status` ENUM('AVAILABLE', 'UNAVAILABLE', 'NEEDS_DISCUSSION') NOT NULL,
+    `note` TEXT NULL,
+    `decidedAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+    `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+    `updatedAt` DATETIME(3) NOT NULL,
+
+    INDEX `InstructorAvailabilityDecision_listingInstructorId_slotType__idx`(`listingInstructorId`, `slotType`, `decidedAt`),
+    INDEX `InstructorAvailabilityDecision_instructorAccountId_decidedAt_idx`(`instructorAccountId`, `decidedAt`),
+    INDEX `InstructorAvailabilityDecision_matchId_slotType_decidedAt_idx`(`matchId`, `slotType`, `decidedAt`),
+    INDEX `InstructorAvailabilityDecision_status_idx`(`status`),
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `InstructorAuditLog` (
+    `id` VARCHAR(191) NOT NULL,
+    `instructorAccountId` VARCHAR(191) NULL,
+    `listingInstructorId` VARCHAR(191) NULL,
+    `matchId` VARCHAR(191) NULL,
+    `action` VARCHAR(191) NOT NULL,
+    `detail` JSON NULL,
+    `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+
+    INDEX `InstructorAuditLog_instructorAccountId_createdAt_idx`(`instructorAccountId`, `createdAt`),
+    INDEX `InstructorAuditLog_listingInstructorId_createdAt_idx`(`listingInstructorId`, `createdAt`),
+    INDEX `InstructorAuditLog_matchId_createdAt_idx`(`matchId`, `createdAt`),
+    INDEX `InstructorAuditLog_action_idx`(`action`),
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `Match` (
+    `id` VARCHAR(191) NOT NULL,
+    `listingAId` VARCHAR(191) NOT NULL,
+    `listingBId` VARCHAR(191) NOT NULL,
+    `status` ENUM('PROPOSED', 'LEARNER_A_ACCEPTED', 'LEARNER_B_ACCEPTED', 'BOTH_ACCEPTED', 'CALLER_PENDING', 'BOOKING_REFERENCE_CONSENT_REQUESTED', 'BOOKING_REFERENCE_SHARED', 'COMPLETED', 'DECLINED', 'EXPIRED', 'REPORTED') NOT NULL DEFAULT 'PROPOSED',
+    `score` INTEGER NOT NULL DEFAULT 0,
+    `qualitySummary` TEXT NULL,
+    `ineligibleReasons` JSON NULL,
+    `learnerAAcceptedAt` DATETIME(3) NULL,
+    `learnerBAcceptedAt` DATETIME(3) NULL,
+    `bothAcceptedAt` DATETIME(3) NULL,
+    `learnerABookingReferenceConfirmedAt` DATETIME(3) NULL,
+    `learnerBBookingReferenceConfirmedAt` DATETIME(3) NULL,
+    `learnerADvsaCallerAt` DATETIME(3) NULL,
+    `learnerBDvsaCallerAt` DATETIME(3) NULL,
+    `callWindowStartedAt` DATETIME(3) NULL,
+    `callWindowExpiresAt` DATETIME(3) NULL,
+    `learnerACompletedAt` DATETIME(3) NULL,
+    `learnerBCompletedAt` DATETIME(3) NULL,
+    `cancelledAt` DATETIME(3) NULL,
+    `cancelReason` TEXT NULL,
+    `archivedAt` DATETIME(3) NULL,
+    `instructorConfirmedByLearnerAtA` DATETIME(3) NULL,
+    `instructorConfirmedByLearnerAtB` DATETIME(3) NULL,
+    `expiresAt` DATETIME(3) NOT NULL,
+    `completedAt` DATETIME(3) NULL,
+    `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+    `updatedAt` DATETIME(3) NOT NULL,
+
+    INDEX `Match_status_idx`(`status`),
+    INDEX `Match_expiresAt_idx`(`expiresAt`),
+    UNIQUE INDEX `Match_listingAId_listingBId_key`(`listingAId`, `listingBId`),
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `MatchEvent` (
+    `id` VARCHAR(191) NOT NULL,
+    `matchId` VARCHAR(191) NOT NULL,
+    `accountId` VARCHAR(191) NULL,
+    `eventType` VARCHAR(191) NOT NULL,
+    `detail` JSON NULL,
+    `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+
+    INDEX `MatchEvent_matchId_createdAt_idx`(`matchId`, `createdAt`),
+    INDEX `MatchEvent_accountId_idx`(`accountId`),
+    INDEX `MatchEvent_eventType_idx`(`eventType`),
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `BookingReferenceSecret` (
+    `id` VARCHAR(191) NOT NULL,
+    `matchId` VARCHAR(191) NOT NULL,
+    `ownerAccountId` VARCHAR(191) NULL,
+    `encryptedValue` TEXT NOT NULL,
+    `iv` VARCHAR(191) NOT NULL,
+    `authTag` VARCHAR(191) NOT NULL,
+    `revealedAt` DATETIME(3) NULL,
+    `expiresAt` DATETIME(3) NOT NULL,
+    `deletedAt` DATETIME(3) NULL,
+    `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+
+    INDEX `BookingReferenceSecret_matchId_ownerAccountId_idx`(`matchId`, `ownerAccountId`),
+    INDEX `BookingReferenceSecret_expiresAt_idx`(`expiresAt`),
+    INDEX `BookingReferenceSecret_deletedAt_idx`(`deletedAt`),
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `Report` (
+    `id` VARCHAR(191) NOT NULL,
+    `listingId` VARCHAR(191) NULL,
+    `matchId` VARCHAR(191) NULL,
+    `reporterAccountId` VARCHAR(191) NULL,
+    `reason` VARCHAR(191) NOT NULL,
+    `detail` TEXT NULL,
+    `status` VARCHAR(191) NOT NULL DEFAULT 'OPEN',
+    `mobileNumber` VARCHAR(191) NULL,
+    `closedAt` DATETIME(3) NULL,
+    `closedReason` VARCHAR(191) NULL,
+    `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+    `updatedAt` DATETIME(3) NOT NULL,
+
+    INDEX `Report_status_createdAt_idx`(`status`, `createdAt`),
+    INDEX `Report_listingId_idx`(`listingId`),
+    INDEX `Report_matchId_idx`(`matchId`),
+    INDEX `Report_reporterAccountId_idx`(`reporterAccountId`),
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `ReportResponse` (
+    `id` VARCHAR(191) NOT NULL,
+    `reportId` VARCHAR(191) NOT NULL,
+    `authorAccountId` VARCHAR(191) NULL,
+    `message` TEXT NOT NULL,
+    `channel` ENUM('PORTAL_REPLY', 'EMAIL_SENT', 'PHONE_CALL_NOTE') NOT NULL DEFAULT 'PORTAL_REPLY',
+    `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+
+    INDEX `ReportResponse_reportId_createdAt_idx`(`reportId`, `createdAt`),
+    INDEX `ReportResponse_authorAccountId_idx`(`authorAccountId`),
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `LearnerNotification` (
+    `id` VARCHAR(191) NOT NULL,
+    `learnerAccountId` VARCHAR(191) NOT NULL,
+    `title` VARCHAR(191) NOT NULL,
+    `message` TEXT NOT NULL,
+    `readAt` DATETIME(3) NULL,
+    `relatedReportId` VARCHAR(191) NULL,
+    `relatedResponseId` VARCHAR(191) NULL,
+    `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+
+    INDEX `LearnerNotification_learnerAccountId_readAt_idx`(`learnerAccountId`, `readAt`),
+    INDEX `LearnerNotification_createdAt_idx`(`createdAt`),
+    INDEX `LearnerNotification_relatedReportId_idx`(`relatedReportId`),
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `EmailQueue` (
+    `id` VARCHAR(191) NOT NULL,
+    `matchId` VARCHAR(191) NOT NULL,
+    `kind` VARCHAR(191) NOT NULL,
+    `recipient` VARCHAR(191) NOT NULL,
+    `recipientRole` VARCHAR(191) NOT NULL DEFAULT 'LEARNER',
+    `scheduledFor` DATETIME(3) NOT NULL,
+    `sentAt` DATETIME(3) NULL,
+    `error` TEXT NULL,
+    `retryCount` INTEGER NOT NULL DEFAULT 0,
+    `maxRetries` INTEGER NOT NULL DEFAULT 3,
+    `status` VARCHAR(191) NOT NULL DEFAULT 'PENDING',
+    `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+    `updatedAt` DATETIME(3) NOT NULL,
+
+    INDEX `EmailQueue_status_scheduledFor_idx`(`status`, `scheduledFor`),
+    INDEX `EmailQueue_matchId_idx`(`matchId`),
+    INDEX `EmailQueue_matchId_kind_recipient_idx`(`matchId`, `kind`, `recipient`),
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `AdminNote` (
+    `id` VARCHAR(191) NOT NULL,
+    `entityType` VARCHAR(191) NOT NULL,
+    `entityId` VARCHAR(191) NOT NULL,
+    `authorEmail` VARCHAR(191) NOT NULL,
+    `note` TEXT NOT NULL,
+    `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+
+    INDEX `AdminNote_entityType_entityId_idx`(`entityType`, `entityId`),
+    INDEX `AdminNote_authorEmail_idx`(`authorEmail`),
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `StaffAccount` (
+    `id` VARCHAR(191) NOT NULL,
+    `email` VARCHAR(191) NOT NULL,
+    `passwordHash` VARCHAR(191) NOT NULL,
+    `name` VARCHAR(191) NOT NULL,
+    `role` ENUM('ADMIN', 'MANAGER', 'SUPPORT') NOT NULL DEFAULT 'ADMIN',
+    `lastLoginAt` DATETIME(3) NULL,
+    `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+    `updatedAt` DATETIME(3) NOT NULL,
+
+    UNIQUE INDEX `StaffAccount_email_key`(`email`),
+    INDEX `StaffAccount_role_createdAt_idx`(`role`, `createdAt`),
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- AddForeignKey
+ALTER TABLE `LearnerMfaFactor` ADD CONSTRAINT `LearnerMfaFactor_accountId_fkey` FOREIGN KEY (`accountId`) REFERENCES `LearnerAccount`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `LearnerBackupCode` ADD CONSTRAINT `LearnerBackupCode_accountId_fkey` FOREIGN KEY (`accountId`) REFERENCES `LearnerAccount`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `LearnerInvite` ADD CONSTRAINT `LearnerInvite_invitedByInstructorAccountId_fkey` FOREIGN KEY (`invitedByInstructorAccountId`) REFERENCES `InstructorAccount`(`id`) ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `LearnerInvite` ADD CONSTRAINT `LearnerInvite_claimedByAccountId_fkey` FOREIGN KEY (`claimedByAccountId`) REFERENCES `LearnerAccount`(`id`) ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `LearnerConsent` ADD CONSTRAINT `LearnerConsent_accountId_fkey` FOREIGN KEY (`accountId`) REFERENCES `LearnerAccount`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `Listing` ADD CONSTRAINT `Listing_accountId_fkey` FOREIGN KEY (`accountId`) REFERENCES `LearnerAccount`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `Listing` ADD CONSTRAINT `Listing_currentCentreId_fkey` FOREIGN KEY (`currentCentreId`) REFERENCES `TestCentre`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `Listing` ADD CONSTRAINT `Listing_originalCentreId_fkey` FOREIGN KEY (`originalCentreId`) REFERENCES `TestCentre`(`id`) ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `InstructorMfaFactor` ADD CONSTRAINT `InstructorMfaFactor_accountId_fkey` FOREIGN KEY (`accountId`) REFERENCES `InstructorAccount`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `InstructorBackupCode` ADD CONSTRAINT `InstructorBackupCode_accountId_fkey` FOREIGN KEY (`accountId`) REFERENCES `InstructorAccount`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `InstructorInvite` ADD CONSTRAINT `InstructorInvite_listingInstructorId_fkey` FOREIGN KEY (`listingInstructorId`) REFERENCES `ListingInstructor`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `InstructorInvite` ADD CONSTRAINT `InstructorInvite_instructorAccountId_fkey` FOREIGN KEY (`instructorAccountId`) REFERENCES `InstructorAccount`(`id`) ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `ListingInstructor` ADD CONSTRAINT `ListingInstructor_listingId_fkey` FOREIGN KEY (`listingId`) REFERENCES `Listing`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `ListingInstructor` ADD CONSTRAINT `ListingInstructor_instructorAccountId_fkey` FOREIGN KEY (`instructorAccountId`) REFERENCES `InstructorAccount`(`id`) ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `InstructorAvailabilityDecision` ADD CONSTRAINT `InstructorAvailabilityDecision_listingInstructorId_fkey` FOREIGN KEY (`listingInstructorId`) REFERENCES `ListingInstructor`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `InstructorAvailabilityDecision` ADD CONSTRAINT `InstructorAvailabilityDecision_instructorAccountId_fkey` FOREIGN KEY (`instructorAccountId`) REFERENCES `InstructorAccount`(`id`) ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `InstructorAvailabilityDecision` ADD CONSTRAINT `InstructorAvailabilityDecision_matchId_fkey` FOREIGN KEY (`matchId`) REFERENCES `Match`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `InstructorAuditLog` ADD CONSTRAINT `InstructorAuditLog_instructorAccountId_fkey` FOREIGN KEY (`instructorAccountId`) REFERENCES `InstructorAccount`(`id`) ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `InstructorAuditLog` ADD CONSTRAINT `InstructorAuditLog_listingInstructorId_fkey` FOREIGN KEY (`listingInstructorId`) REFERENCES `ListingInstructor`(`id`) ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `InstructorAuditLog` ADD CONSTRAINT `InstructorAuditLog_matchId_fkey` FOREIGN KEY (`matchId`) REFERENCES `Match`(`id`) ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `Match` ADD CONSTRAINT `Match_listingAId_fkey` FOREIGN KEY (`listingAId`) REFERENCES `Listing`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `Match` ADD CONSTRAINT `Match_listingBId_fkey` FOREIGN KEY (`listingBId`) REFERENCES `Listing`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `MatchEvent` ADD CONSTRAINT `MatchEvent_matchId_fkey` FOREIGN KEY (`matchId`) REFERENCES `Match`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `MatchEvent` ADD CONSTRAINT `MatchEvent_accountId_fkey` FOREIGN KEY (`accountId`) REFERENCES `LearnerAccount`(`id`) ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `BookingReferenceSecret` ADD CONSTRAINT `BookingReferenceSecret_matchId_fkey` FOREIGN KEY (`matchId`) REFERENCES `Match`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `BookingReferenceSecret` ADD CONSTRAINT `BookingReferenceSecret_ownerAccountId_fkey` FOREIGN KEY (`ownerAccountId`) REFERENCES `LearnerAccount`(`id`) ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `Report` ADD CONSTRAINT `Report_listingId_fkey` FOREIGN KEY (`listingId`) REFERENCES `Listing`(`id`) ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `Report` ADD CONSTRAINT `Report_matchId_fkey` FOREIGN KEY (`matchId`) REFERENCES `Match`(`id`) ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `Report` ADD CONSTRAINT `Report_reporterAccountId_fkey` FOREIGN KEY (`reporterAccountId`) REFERENCES `LearnerAccount`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `ReportResponse` ADD CONSTRAINT `ReportResponse_reportId_fkey` FOREIGN KEY (`reportId`) REFERENCES `Report`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `ReportResponse` ADD CONSTRAINT `ReportResponse_authorAccountId_fkey` FOREIGN KEY (`authorAccountId`) REFERENCES `LearnerAccount`(`id`) ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `LearnerNotification` ADD CONSTRAINT `LearnerNotification_learnerAccountId_fkey` FOREIGN KEY (`learnerAccountId`) REFERENCES `LearnerAccount`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+
+-- Test Centre Seed Data (337 centres)
+
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zli2d0000a9r70gf89163', 'ballymena-county-antrim', 'Ballymena', 'Pennybridge Ind Estate', '', 'BT42 3ER', 'County Antrim', NULL, 54.850662, -6.260427, '2026-05-12 18:51:30', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zli2q0001a9r7joi8laqd', 'belfast-county-antrim', 'Belfast', '66 Balmoral Road', '', 'BT12 6QL', 'County Antrim', NULL, 54.573201, -5.966918, '2026-05-12 18:51:30', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zli2u0002a9r7u7rx2c8z', 'larne-county-antrim', 'Larne', 'Ballyboley Road', '', 'BT40 2SY', 'County Antrim', NULL, 54.856408, -5.852766, '2026-05-12 18:51:30', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zli2x0003a9r7dkzgvz67', 'lisburn-county-antrim', 'Lisburn', '1 Enterprise Crescent', '', 'BT28 2BP', 'County Antrim', NULL, 54.511788, -6.076415, '2026-05-12 18:51:30', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zli300004a9r7baat44q5', 'mallusk-county-antrim', 'Mallusk', 'Commercial Way', '', 'BT36 4YY', 'County Antrim', NULL, 54.675915, -6.001116, '2026-05-12 18:51:30', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zli330005a9r75zlazvtk', 'armagh-county-armagh', 'Armagh', '47 Hamiltonsbawn Road', '', 'BT60 1HW', 'County Armagh', NULL, 54.347343, -6.635124, '2026-05-12 18:51:30', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zli360006a9r7dk8lgtrl', 'craigavon-county-armagh', 'Craigavon', '3 Diviny Drive', '', 'BT63 5RY', 'County Armagh', NULL, 54.447636, -6.414869, '2026-05-12 18:51:30', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zli380007a9r72spuxo54', 'downpatrick-county-down', 'Downpatrick', 'Cloonagh Road', '', 'BT30 6DU', 'County Down', NULL, 54.314841, -5.705904, '2026-05-12 18:51:30', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zli3b0008a9r7llz52gou', 'hydebank-county-down', 'Hydebank', '4 Hospital Road', '', 'BT8 8JL', 'County Down', NULL, 54.542407, -5.927035, '2026-05-12 18:51:30', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zli3e0009a9r7hpoqn8lp', 'newry-county-down', 'Newry', '51 Rathfriland Road', '', 'BT34 1LD', 'County Down', NULL, 54.188206, -6.322011, '2026-05-12 18:51:30', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zli3i000aa9r7idgp8zmv', 'newtownards-county-down', 'Newtownards', 'Jubilee Road', '', 'BT23 4XP', 'County Down', NULL, 54.584522, -5.704833, '2026-05-12 18:51:30', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zli3k000ba9r7d3cf44nb', 'enniskillen-county-fermanagh', 'Enniskillen', '22 Coa Road', '', 'BT74 4AD', 'County Fermanagh', NULL, 54.35609, -7.615998, '2026-05-12 18:51:30', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zli3n000ca9r7q9w2fo05', 'coleraine-county-londonderry', 'Coleraine', '2 Loughan Hill Ind Estate', '', 'BT52 2NJ', 'County Londonderry', NULL, 55.15111, -6.651456, '2026-05-12 18:51:30', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zli3p000da9r7o9d2wrjn', 'londonderry-county-londonderry', 'Londonderry', 'Newbuildings Ind Estate', '', 'BT47 2SX', 'County Londonderry', NULL, 54.955082, -7.367352, '2026-05-12 18:51:30', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zli3r000ea9r7biwgr08s', 'londonderry-altnagelvin-county-londonderry', 'Londonderry Altnagelvin', 'Unit 4', '', 'BT47 2ED', 'County Londonderry', NULL, 54.980164, -7.305802, '2026-05-12 18:51:30', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zli3w000fa9r7v78mxx01', 'cookstown-county-tyrone', 'Cookstown', 'Sandholes Road', '', 'BT80 9AR', 'County Tyrone', NULL, 54.615131, -6.768862, '2026-05-12 18:51:30', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zli41000ga9r7h49gxyzi', 'omagh-county-tyrone', 'Omagh', '2 Mullaghmena Park', '', 'BT78 5PW', 'County Tyrone', NULL, 54.607877, -7.327301, '2026-05-12 18:51:30', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlib50016a9r7146hya53', 'ashfield', 'Ashfield', 'Ground Floor', '', 'NG17 5LA', 'East Midlands', NULL, 53.12456, -1.236506, '2026-05-12 18:51:30', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlib70017a9r7x0sgikng', 'boston', 'Boston', 'Unit 2', '', 'PE21 8AL', 'East Midlands', NULL, 52.970314, -0.030233, '2026-05-12 18:51:30', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlib90018a9r7l7wmbha5', 'chesterfield', 'Chesterfield', 'Bus Garage', '', 'S41 7LT', 'East Midlands', NULL, 53.244556, -1.425783, '2026-05-12 18:51:30', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlibc0019a9r74v2p8l8z', 'derby-alvaston', 'Derby (Alvaston)', 'Quintin Road', '', 'DE24 8GY', 'East Midlands', NULL, 52.901984, -1.434317, '2026-05-12 18:51:30', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlibe001aa9r78uqttxgo', 'grantham-somerby', 'Grantham (Somerby)', 'Spitalgate Airfield', '', 'NG31 7TX', 'East Midlands', NULL, 52.901939, -0.587337, '2026-05-12 18:51:30', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlibj001ca9r7y5vsu6f9', 'hinckley', 'Hinckley', '33 Brookside', '', 'LE10 2TG', 'East Midlands', NULL, 52.533846, -1.370205, '2026-05-12 18:51:30', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlibm001da9r7ecy1c7oa', 'kettering', 'Kettering', 'Orion Way', '', 'NN15 6NL', 'East Midlands', NULL, 52.378766, -0.722892, '2026-05-12 18:51:30', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlibo001ea9r7j8g9qnlq', 'leicester-cannock-street', 'Leicester (Cannock Street)', '40 Cannock Street', '', 'LE4 9HT', 'East Midlands', NULL, 52.663547, -1.080357, '2026-05-12 18:51:30', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlibr001fa9r776etx7cu', 'leicester-wigston', 'Leicester (Wigston)', 'Tigers Road', '', 'LE18 4WS', 'East Midlands', NULL, 52.583956, -1.141193, '2026-05-12 18:51:30', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlibt001ga9r7y8c5o3bl', 'lincoln', 'Lincoln', 'Earlsfield Close', '', 'LN6 3RT', 'East Midlands', NULL, 53.204053, -0.611999, '2026-05-12 18:51:30', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlibx001ha9r7hibxrwjl', 'loughborough', 'Loughborough', 'Ark Business Centre', '', 'LE11 1JP', 'East Midlands', NULL, 52.780652, -1.200917, '2026-05-12 18:51:30', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlibz001ia9r7mdoaujuv', 'louth', 'Louth', 'Meridian Leisure Centre', '', 'LN11 8RS', 'East Midlands', NULL, 53.363635, 0.01554, '2026-05-12 18:51:30', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlic1001ja9r7uhcsc5xb', 'melton-mowbray', 'Melton Mowbray', 'Phoenix House Nottingham Road', '', 'LE13 0UL', 'East Midlands', NULL, 52.769571, -0.893486, '2026-05-12 18:51:30', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlic4001ka9r7f5ztpo0p', 'northampton', 'Northampton', 'Gladstone Business Centre', '', 'NN5 7QA', 'East Midlands', NULL, 52.253271, -0.915935, '2026-05-12 18:51:30', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlic7001la9r7u2jc8e0e', 'nottingham-chilwell', 'Nottingham (Chilwell)', 'Unit 24', '', 'NG9 6DZ', 'East Midlands', NULL, 52.904684, -1.238322, '2026-05-12 18:51:30', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlicb001ma9r7doiaotqs', 'nottingham-colwick', 'Nottingham (Colwick)', 'Private Road No 5', '', 'NG4 2JU', 'East Midlands', NULL, 52.95722, -1.070319, '2026-05-12 18:51:30', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlicd001na9r7ttyw2v5n', 'skegness', 'Skegness', 'Unit 3, Beaubridge Business Park', '', 'PE25 3ST', 'East Midlands', NULL, 53.142485, 0.325217, '2026-05-12 18:51:30', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlicf001oa9r7815zafnl', 'wellingborough', 'Wellingborough', 'Glamis Hall', '', 'NN8 3RU', 'East Midlands', NULL, 52.301939, -0.723664, '2026-05-12 18:51:30', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlicj001pa9r78xxfnokx', 'worksop', 'Worksop', 'Unit 4', '', 'S81 8BW', 'East Midlands', NULL, 53.32317, -1.15948, '2026-05-12 18:51:30', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zli9g000ka9r72zy61g48', 'basildon', 'Basildon', '2 Paycocke Road', '', 'SS14 3JS', 'East of England', NULL, 51.589097, 0.488023, '2026-05-12 18:51:30', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zli9j000la9r7q3v0ccqc', 'bedford', 'Bedford', 'Bedford Heights', '', 'MK41 7NY', 'East of England', NULL, 52.148236, -0.476541, '2026-05-12 18:51:30', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zli9l000ma9r72ryherkt', 'bishops-stortford', 'Bishops Stortford', 'South Road', '', 'CM23 3JQ', 'East of England', NULL, 51.861419, 0.164391, '2026-05-12 18:51:30', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zli9o000na9r7rqa5w4nj', 'bletchley', 'Bletchley', 'Block 4', '', 'MK3 6DH', 'East of England', NULL, 51.993933, -0.742398, '2026-05-12 18:51:30', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zli9r000oa9r78oux95gr', 'bury-st-edmunds', 'Bury St Edmunds', 'Tritron House', '', 'IP33 1TJ', 'East of England', NULL, 52.248677, 0.711061, '2026-05-12 18:51:30', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zli9t000pa9r7mjca6wae', 'cambridge-brookmount-court', 'Cambridge (Brookmount Court)', 'Units A & B Brookmount Court', '', 'CB4 2QH', 'East of England', NULL, 52.233282, 0.136117, '2026-05-12 18:51:30', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zli9v000qa9r7n7mu6prz', 'chelmsford', 'Chelmsford', 'Oaklands Park', '', 'CM2 9AQ', 'East of England', NULL, 51.722758, 0.461469, '2026-05-12 18:51:30', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zli9y000ra9r78dhv689a', 'clacton-on-sea', 'Clacton-on-Sea', '103 - 105 Carnarvon Road', '', 'CO15 6PR', 'East of England', NULL, 51.79426, 1.152281, '2026-05-12 18:51:30', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlia1000sa9r7fog8t3yz', 'colchester', 'Colchester', 'Grange Way', '', 'CO2 8HF', 'East of England', NULL, 51.872116, 0.928174, '2026-05-12 18:51:30', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlia4000ta9r7khtn7s5b', 'ipswich', 'Ipswich', 'Wentworth Road', '', 'IP3 9SW', 'East of England', NULL, 52.030196, 1.220362, '2026-05-12 18:51:30', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlia6000ua9r727nls3mi', 'kings-lynn', 'Kings Lynn', 'Rollesby Road', '', 'PE30 4LS', 'East of England', NULL, 52.746594, 0.423121, '2026-05-12 18:51:30', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlia8000va9r7i1ydx79d', 'leighton-buzzard-stanbridge-road', 'Leighton Buzzard (Stanbridge Road)', '8 Commerce Way', '', 'LU7 4RW', 'East of England', NULL, 51.912091, -0.631644, '2026-05-12 18:51:30', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zliad000wa9r7xp5rzvi1', 'letchworth', 'Letchworth', 'Jackmans Place', '', 'SG6 1RF', 'East of England', NULL, 51.978213, -0.21463, '2026-05-12 18:51:30', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zliag000xa9r7x9mx391m', 'lowestoft-mobbs-way', 'Lowestoft (Mobbs Way)', '2', '', 'NR32 3AL', 'East of England', NULL, 52.486941, 1.714887, '2026-05-12 18:51:30', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zliai000ya9r761ihstam', 'luton', 'Luton', '6 - 10 Adelaide Street', '', 'LU1 5BT', 'East of England', NULL, 51.877727, -0.420119, '2026-05-12 18:51:30', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zliao000za9r7e2n3mazm', 'norwich-peachman-way', 'Norwich (Peachman Way)', 'Jupiter Road', '', 'NR6 6SU', 'East of England', NULL, 52.658489, 1.283073, '2026-05-12 18:51:30', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zliaq0010a9r7vu4c7rg3', 'peterborough', 'Peterborough', 'Second Drove', '', 'PE1 5XA', 'East of England', NULL, 52.569107, -0.219335, '2026-05-12 18:51:30', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zliau0011a9r7q01vpo0y', 'southend-on-sea', 'Southend-on-Sea', 'The Tickfield Centre', '', 'SS2 6LL', 'East of England', NULL, 51.548454, 0.709, '2026-05-12 18:51:30', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zliaw0012a9r7wsrcxnxp', 'st-albans', 'St Albans', 'Beauver House', '', 'AL1 3JX', 'East of England', NULL, 51.753096, -0.334619, '2026-05-12 18:51:30', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zliay0013a9r76onh7qjo', 'stevenage', 'Stevenage', '3 Drapers Way', '', 'SG1 3DT', 'East of England', NULL, 51.910984, -0.208446, '2026-05-12 18:51:30', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlib10014a9r7m4yo5rpb', 'tilbury', 'Tilbury', 'Montana House', '', 'RM18 7AE', 'East of England', NULL, 51.4643, 0.351418, '2026-05-12 18:51:30', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlib30015a9r76p3za86y', 'watford', 'Watford', 'CP House', '', 'WD25 8HU', 'East of England', NULL, 51.66641, -0.365187, '2026-05-12 18:51:30', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlicm001qa9r7xbdp78wu', 'barnet-london', 'Barnet (London)', 'Raydean House', '', 'EN5 1AH', 'London', NULL, 51.645291, -0.186156, '2026-05-12 18:51:30', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlico001ra9r73wtebamx', 'belvedere-london', 'Belvedere (London)', '33 Woolwich Road', '', 'DA17 5EE', 'London', NULL, 51.483605, 0.142249, '2026-05-12 18:51:30', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlicq001sa9r7iwaa2ezf', 'borehamwood-london', 'Borehamwood (London)', 'Unit 1 Stirling Court', '', 'WD6 2BT', 'London', NULL, 51.646483, -0.254073, '2026-05-12 18:51:30', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlict001ta9r7ml887xok', 'brentwood-london', 'Brentwood (London)', '89 Warley Hill', '', 'CM14 5JN', 'London', NULL, 51.610538, 0.29693, '2026-05-12 18:51:30', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlicw001ua9r7hfoggovz', 'bromley-london', 'Bromley (London)', '121-123 Burnt Ash Lane', '', 'BR1 5AB', 'London', NULL, 51.421271, 0.021472, '2026-05-12 18:51:30', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlicz001va9r7fix4or0q', 'chertsey-london', 'Chertsey (London)', 'Unit 4', '', 'KT16 9JX', 'London', NULL, 51.384649, -0.509434, '2026-05-12 18:51:30', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlid2001wa9r7f3efh7ge', 'chingford-london', 'Chingford (London)', 'Doric House', '', 'E4 6AD', 'London', NULL, 51.633507, 0.009002, '2026-05-12 18:51:30', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlid5001xa9r7nwimzid5', 'enfield-brancroft-way', 'Enfield (Brancroft Way)', '33 Brancroft Way', '', 'EN3 7NJ', 'London', NULL, 51.659425, -0.029829, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlid8001ya9r7cu2jfts8', 'enfield-innova-business-park', 'Enfield (Innova Business Park)', 'Solar Way', '', 'EN3 7XY', 'London', NULL, 51.676863, -0.021349, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlidb001za9r70nenw3ny', 'erith-london', 'Erith (London)', 'Crabtree', '', 'DA17 6LJ', 'London', NULL, 51.498626, 0.161252, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlidd0020a9r7ft5k2r4j', 'goodmayes-london', 'Goodmayes (London)', '98 Goodmayes Road', '', 'IG3 9UZ', 'London', NULL, 51.563696, 0.109982, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlidg0021a9r7apcd1gez', 'greenford-horsenden-lane', 'Greenford (Horsenden Lane)', '96 Horsenden Lane North', '', 'UB6 7QH', 'London', NULL, 51.550231, -0.330932, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlidj0022a9r7p0va5bjz', 'hendon-london', 'Hendon (London)', '3 Aviation Drive', '', 'NW9 5TZ', 'London', NULL, 51.59599, -0.240141, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlidm0023a9r7n7dwxznl', 'hornchurch-london', 'Hornchurch (London)', '75 Station Lane', '', 'RM12 6JX', 'London', NULL, 51.559275, 0.220939, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlidq0024a9r7evrjgki3', 'isleworth-fleming-way', 'Isleworth (Fleming Way)', 'The Wireless Factory', '', 'TW7 6DB', 'London', NULL, 51.46634, -0.33722, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlidt0025a9r73kor5fmh', 'loughton-london', 'Loughton (London)', 'Crown Buildings', '', 'IG10 1RB', 'London', NULL, 51.649588, 0.05668, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlidv0026a9r7jvc2xpx2', 'mill-hill-london', 'Mill Hill (London)', 'Unit 9', '', 'NW7 2DQ', 'London', NULL, 51.6103, -0.246983, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlidx0027a9r7wllkjh22', 'mitcham-london', 'Mitcham (London)', 'Redhouse Rd', '', 'CR0 3AQ', 'London', NULL, 51.390493, -0.134444, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlie00028a9r79ln5536b', 'morden-london', 'Morden (London)', '10 Tudor Drive', '', 'SM4 4PE', 'London', NULL, 51.386583, -0.212444, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlie20029a9r7k64fm3zx', 'pinner-london', 'Pinner (London)', '221 Tolcarne Drive', '', 'HA5 2DZ', 'London', NULL, 51.596826, -0.399712, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlie5002aa9r7hgy5lipt', 'sidcup-london', 'Sidcup (London)', '2 Crayside', '', 'DA14 5AG', 'London', NULL, 51.419393, 0.122601, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlie8002ba9r7rqgnpfsq', 'slough-london', 'Slough (London)', '12 Waterside Drive', '', 'SL3 6EZ', 'London', NULL, 51.508509, -0.545873, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zliea002ca9r7uj2ug1g5', 'southall-london', 'Southall (London)', '295 Allenby Road', '', 'UB1 2HD', 'London', NULL, 51.525341, -0.364825, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlied002da9r74dg5rrfs', 'tolworth-london', 'Tolworth (London)', 'Douglas House', '', 'KT6 7RZ', 'London', NULL, 51.382972, -0.293566, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlief002ea9r71pm15a93', 'tottenham', 'Tottenham', 'Annex Building', '', 'N17 8JL', 'London', NULL, 51.607455, -0.079004, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zliei002fa9r7s0lxbpzy', 'uxbridge-london', 'Uxbridge (London)', 'Unit 7', '', 'UB8 2DB', 'London', NULL, 51.536887, -0.485388, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zliek002ga9r7jkw7uqcg', 'wanstead-london', 'Wanstead (London)', '2 Devon House', '', 'E11 2AW', 'London', NULL, 51.580456, 0.023838, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zliep002ia9r7bdlael9y', 'wood-green-london', 'Wood Green (London)', '5LF', '', 'N22 5JJ', 'London', NULL, 51.598137, -0.106008, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlies002ja9r7cn8upodu', 'yeading-london', 'Yeading (London)', 'Cygnet Way Willow Tree Lane', '', 'UB4 9BS', 'London', NULL, 51.523514, -0.390089, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlieu002ka9r7xqskslbg', 'alnwick', 'Alnwick', 'Roxburgh House', '', 'NE66 1LA', 'North-east England', NULL, 55.412478, -1.708654, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zliew002la9r7szx5b5cm', 'berwick-on-tweed', 'Berwick-On-Tweed', 'Tweedmouth Ind. Estate', '', 'TD15 2UY', 'North-east England', NULL, 55.763235, -2.016319, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zliez002ma9r7xh8xi4nb', 'blyth', 'Blyth', 'Unit 3 Sextant House', '', 'NE24 3BA', 'North-east England', NULL, 55.124611, -1.50235, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlif1002na9r7cvyz1ej0', 'darlington', 'Darlington', 'DVSA', '', 'DL1 4PW', 'North-east England', NULL, 54.519156, -1.515185, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlif4002oa9r7h2riwm7h', 'durham', 'Durham', '1st Floor', '', 'DH7 8XL', 'North-east England', NULL, 54.746493, -1.609955, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlif7002pa9r7p96bovrx', 'gateshead', 'Gateshead', 'Waterside Drive', '', 'NE11 9HU', 'North-east England', NULL, 54.95711, -1.655954, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlif9002qa9r74t2mrj06', 'gosforth', 'Gosforth', 'Sandy lane', '', 'NE3 5HB', 'North-east England', NULL, 55.041574, -1.609086, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlifc002ra9r701uwx3lp', 'hartlepool', 'Hartlepool', 'Unit 20', '', 'TS25 1TZ', 'North-east England', NULL, 54.6771, -1.201254, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zliff002sa9r762xyx1mv', 'hexham', 'Hexham', 'St Andrews House', '', 'NE46 3EW', 'North-east England', NULL, 54.97453, -2.109647, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlifh002ta9r7ilf39vdo', 'middlesbrough', 'Middlesbrough', 'Maxwell Road', '', 'TS3 8TE', 'North-east England', NULL, 54.571526, -1.189598, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlifj002ua9r7metpeck3', 'northallerton', 'Northallerton', 'Elder House', '', 'DL6 1NU', 'North-east England', NULL, 54.340274, -1.432126, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlifl002va9r75fj4wlej', 'sunderland', 'Sunderland', 'River Bank Road', '', 'SR5 3JJ', 'North-east England', NULL, 54.921227, -1.428647, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlifn002wa9r720wbimpi', 'atherton-manchester', 'Atherton (Manchester)', 'Gibfield Park Avenue', '', 'M46 0SU', 'North-west England', NULL, 53.530233, -2.506199, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlifp002xa9r7hbm026hh', 'barrow-in-furness', 'Barrow In Furness', 'Trinity Enterprise Centre', '', 'LA14 2PN', 'North-west England', NULL, 54.118497, -3.241647, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlifr002ya9r7srwhbskl', 'blackburn-with-darwen', 'Blackburn with Darwen', 'Blackburn Interchange', '', 'BB3 0DB', 'North-west England', NULL, 53.713168, -2.476362, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlift002za9r75aqwvht5', 'blackpool', 'Blackpool', 'Warbreck Hill Road', '', 'FY2 0XE', 'North-west England', NULL, 53.839997, -3.034417, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlifv0030a9r7nqnah4k4', 'bolton-manchester', 'Bolton (Manchester)', '143 Weston Street', '', 'BL3 2AW', 'North-west England', NULL, 53.565259, -2.423318, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlify0031a9r7fmpxww48', 'bredbury-manchester', 'Bredbury (Manchester)', 'Lingard Lane', '', 'SK6 2QT', 'North-west England', NULL, 53.429024, -2.124649, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlig00032a9r76un5w9o3', 'bury-manchester', 'Bury (Manchester)', 'Smith Street', '', 'BL9 6HH', 'North-west England', NULL, 53.599311, -2.285502, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlig20033a9r7uhcabzq7', 'buxton', 'Buxton', 'The Dairy', '', 'SK17 9DS', 'North-west England', NULL, 53.252962, -1.915261, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlig50034a9r7pfrmyoce', 'carlisle', 'Carlisle', 'Port Road Business Park', '', 'CA2 7AF', 'North-west England', NULL, 54.896817, -2.953437, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlig70035a9r7th2hkw7r', 'carlisle-lgv-cars', 'Carlisle LGV (Cars)', 'Kingstown Industrial Estate', '', 'CA3 0HA', 'North-west England', NULL, 54.924242, -2.951511, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zliga0036a9r7p2tw8qku', 'chadderton', 'Chadderton', '9 Broadgate', '', 'OL9 9XA', 'North-west England', NULL, 53.532183, -2.168839, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zligc0037a9r7cyw2um5y', 'cheetham-hill-manchester', 'Cheetham Hill (Manchester)', 'Alderglen Road', '', 'M8 0AL', 'North-west England', NULL, 53.500813, -2.2421, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zligg0038a9r75llcyuu9', 'chester', 'Chester', 'Unit 16', '', 'CH1 6LT', 'North-west England', NULL, 53.246752, -2.932817, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zligi0039a9r7nctvm3uf', 'chorley', 'Chorley', 'Rossall Road', '', 'PR6 0BT', 'North-west England', NULL, 53.657511, -2.618544, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zligk003aa9r7zje4875i', 'crewe', 'Crewe', '6 Nile Street', '', 'CW2 7LL', 'North-west England', NULL, 53.089877, -2.444126, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zligm003ba9r7q46viawu', 'heysham', 'Heysham', '5 Penrod Way', '', 'LA3 2UZ', 'North-west England', NULL, 54.036971, -2.901605, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zligp003ca9r7jplg7u7h', 'kendal-oxenholme-road', 'Kendal (Oxenholme Road)', 'Murley Moss', '', 'LA9 7RL', 'North-west England', NULL, 54.311117, -2.735475, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zligr003da9r7eq047rsu', 'macclesfield', 'Macclesfield', 'Unit 4 Bailey Court', '', 'SK10 1JQ', 'North-west England', NULL, 53.257948, -2.120116, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zligu003ea9r7d4xwxxiu', 'nelson', 'Nelson', 'Ground Floor Units 103', '', 'BB9 9BT', 'North-west England', NULL, 53.834728, -2.210295, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zligw003fa9r7dtchrqym', 'norris-green-liverpool', 'Norris Green (Liverpool)', 'Falklands Approach', '', 'L11 5BR', 'North-west England', NULL, 53.444079, -2.930451, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zligz003ga9r7w411legb', 'northwich', 'Northwich', '4 Felix Road', '', 'CW8 4BU', 'North-west England', NULL, 53.259667, -2.526247, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlih2003ha9r7gxs4qzhw', 'preston', 'Preston', 'Chain Caul Road', '', 'PR2 2PD', 'North-west England', NULL, 53.760392, -2.751794, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlih5003ia9r7z8ie49cn', 'rochdale-manchester', 'Rochdale (Manchester)', 'Room G10', '', 'OL16 5EB', 'North-west England', NULL, 53.609916, -2.139918, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlih7003ja9r7hudsalzi', 'sale-manchester', 'Sale (Manchester)', '36 - 38 Poplar Grove', '', 'M33 7ER', 'North-west England', NULL, 53.419437, -2.320199, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlih9003ka9r7m4f3fwkj', 'southport-liverpool', 'Southport (Liverpool)', 'Eastbank House', '', 'PR8 1HE', 'North-west England', NULL, 53.64405, -3.00378, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlihc003la9r7xb67qjlm', 'speke-liverpool', 'Speke (Liverpool)', 'Unit 3 Dakota Business Park', '', 'L19 2QR', 'North-west England', NULL, 53.348974, -2.884588, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlihe003ma9r7behb9vqd', 'st-helens-liverpool', 'St Helens (Liverpool)', '1 Navigation Road', '', 'WA9 1NS', 'North-west England', NULL, 53.457158, -2.722391, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlihh003na9r7xkecmo85', 'steeton', 'Steeton', 'Station Road', '', 'BD20 6RW', 'North-west England', NULL, 53.899463, -1.95075, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlihk003oa9r7i4r97qtl', 'upton', 'Upton', '53 Arrowe Park Rd', '', 'CH49 0UF', 'North-west England', NULL, 53.37934, -3.097755, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlihm003pa9r7nnbvby7u', 'wallasey', 'Wallasey', '17c King Street', '', 'CH44 8AT', 'North-west England', NULL, 53.418817, -3.027343, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zliho003qa9r7wow9juxg', 'warrington', 'Warrington', 'Warrington Borough Council Orford Day Centre', '', 'WA2 9EP', 'North-west England', NULL, 53.409939, -2.579295, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlihq003ra9r7pblwoul1', 'west-didsbury-manchester', 'West Didsbury (Manchester)', 'Unit 11', '', 'M21 7QY', 'North-west England', NULL, 53.424502, -2.258643, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zliht003sa9r7vuj76r3c', 'widnes', 'Widnes', 'Everite Road', '', 'WA8 8PT', 'North-west England', NULL, 53.362373, -2.77248, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlihv003ta9r7fqs1d76l', 'workington', 'Workington', 'Unit 10-11', '', 'CA14 3YT', 'North-west England', NULL, 54.634885, -3.56942, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlisz006oa9r7c3sz7t27', 'aberdeen-north', 'Aberdeen North', 'Unit A4 Davidson House', '', 'AB22 8GT', 'Scotland', NULL, 57.181048, -2.119022, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlit4006pa9r7420pf3zk', 'aberdeen-south-cove', 'Aberdeen South (Cove)', 'Moss Road', '', 'AB12 3GQ', 'Scotland', NULL, 57.088883, -2.107541, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlita006qa9r7jkttsdyt', 'aberfeldy', 'Aberfeldy', 'Town Hall', '', 'PH15 2BJ', 'Scotland', NULL, 56.618036, -3.868262, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlite006ra9r7pd9bgjyi', 'airdrie', 'Airdrie', '7 Aitchison Street', '', 'ML6 0DA', 'Scotland', NULL, 55.866849, -3.989041, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlitj006sa9r7g7dz9ic5', 'alness', 'Alness', 'Unit 22 Fyrish Way', '', 'IV17 0PJ', 'Scotland', NULL, 57.69089, -4.269382, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlitm006ta9r7mzgji7kd', 'arbroath', 'Arbroath', 'Asda Supermarket', '', 'DD11 2NQ', 'Scotland', NULL, 56.550257, -2.612605, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlitp006ua9r7gyhj2mv1', 'ayr', 'Ayr', '40 Boundary Road', '', 'KA8 9DJ', 'Scotland', NULL, 55.482265, -4.603686, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlitu006va9r7o6lsdjvp', 'ballater', 'Ballater', 'The Lecture Room', '', 'AB35 5QW', 'Scotland', NULL, 57.045553, -3.041236, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlitx006wa9r775ff1dwl', 'banff', 'Banff', 'Ground Floor Banff Castle', '', 'AB45 1DL', 'Scotland', NULL, 57.66581, -2.523151, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zliu1006xa9r7asekhg9c', 'barra', 'Barra', 'The Pier', '', 'HS9 5XD', 'Scotland', NULL, 56.955611, -7.487706, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zliu4006ya9r7xwnrvps9', 'benbecula-island', 'Benbecula Island', 'Balivanich Airport', '', 'HS7 5LA', 'Scotland', NULL, 57.471241, -7.371576, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zliu7006za9r74g32q94t', 'bishopbriggs', 'Bishopbriggs', 'Crosshill Road', '', 'G64 2QA', 'Scotland', NULL, 55.923255, -4.198994, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zliub0070a9r7gdqhhbtk', 'brodick-isle-of-arran', 'Brodick (Isle of Arran)', 'Royal Mail Delivery Office', '', 'KA27 8AU', 'Scotland', NULL, 55.576194, -5.138315, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zliue0071a9r7juxf1d65', 'buckie', 'Buckie', 'The Fire Station', '', 'AB56 1QJ', 'Scotland', NULL, 57.67316, -2.972518, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zliui0072a9r7g0pfxon9', 'callander', 'Callander', 'Burgh Chambers', '', 'FK17 8BN', 'Scotland', NULL, 56.242522, -4.213864, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlium0073a9r7cehp10y6', 'campbeltown', 'Campbeltown', 'Crown Buildings', '', 'PA28 6BD', 'Scotland', NULL, 55.423824, -5.602466, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zliuq0074a9r70yfehtez', 'castle-douglas', 'Castle Douglas', 'Carlingwark Cottage', '', 'DG7 1TH', 'Scotland', NULL, 54.931446, -3.935998, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zliuu0075a9r74zuqhayx', 'crieff', 'Crieff', 'Crieff Fire Station', '', 'PH7 3SB', 'Scotland', NULL, 56.367762, -3.845664, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zliux0076a9r7c7vmzj3h', 'cumnock', 'Cumnock', 'Town Hall', '', 'KA18 1DX', 'Scotland', NULL, 55.451603, -4.26414, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zliuz0077a9r73vegrw5v', 'dumbarton', 'Dumbarton', 'Strathleven House Suite A4', '', 'G82 3PD', 'Scotland', NULL, 55.969633, -4.575782, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zliv20078a9r7cwui2x7x', 'dumfries', 'Dumfries', '161 Brooms Road', '', 'DG1 2SH', 'Scotland', NULL, 55.069253, -3.596713, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zliv60079a9r74grwfrvl', 'dundee', 'Dundee', 'Block 23B', '', 'DD2 3QH', 'Scotland', NULL, 56.478572, -3.010089, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zliva007aa9r7ztgif2bx', 'dunfermline-vine', 'Dunfermline (Vine)', 'Vine Conference Centre', '', 'KY11 4JU', 'Scotland', NULL, 56.075884, -3.426402, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlivc007ba9r76z8l43xn', 'dunoon', 'Dunoon', 'Dunoon Business Centre', '', 'PA23 8BP', 'Scotland', NULL, 55.953017, -4.922681, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlivg007ca9r70ibh4m3b', 'duns', 'Duns', 'Scottish Borders Council', '', 'TD11 3AU', 'Scotland', NULL, 55.777829, -2.348189, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlivj007da9r7wgdqiaxk', 'east-kilbride', 'East Kilbride', 'John Wright Sports Centre', '', 'G74 3EU', 'Scotland', NULL, 55.766341, -4.161805, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlivm007ea9r7snwva1ad', 'edinburgh-currie', 'Edinburgh (Currie)', '13-15 Bryce Road', '', 'EH14 5LT', 'Scotland', NULL, 55.899917, -3.308236, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlivp007fa9r7jmob3mm8', 'edinburgh-musselburgh', 'Edinburgh (Musselburgh)', 'Newhailes Industrial Estate', '', 'EH21 6SJ', 'Scotland', NULL, 55.942775, -3.067167, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlivs007ga9r7yjav02n4', 'elgin', 'Elgin', 'Crown Buildings', '', 'IV30 1UE', 'Scotland', NULL, 57.651348, -3.317999, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlivv007ha9r7936fiilj', 'forfar', 'Forfar', 'ASDA Supercentre', '', 'DD8 2AE', 'Scotland', NULL, 56.642738, -2.889522, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlivy007ia9r73j28g1cy', 'fort-william', 'Fort William', 'Lochaber College', '', 'PH33 6AN', 'Scotland', NULL, 56.822151, -5.105781, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zliw0007ja9r7a81d69o1', 'fraserburgh', 'Fraserburgh', 'Office No.7', '', 'AB43 9TN', 'Scotland', NULL, 57.690625, -2.00318, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zliw4007ka9r7xlt7tqam', 'gairloch', 'Gairloch', 'Mihol Road', '', 'IV21 2BX', 'Scotland', NULL, 57.736158, -5.701534, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zliw7007la9r787j77dgu', 'galashiels', 'Galashiels', '1 Croft Street', '', 'TD1 3BH', 'Scotland', NULL, 55.61259, -2.802674, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zliwc007ma9r7hlwyugc1', 'girvan', 'Girvan', 'The Carrick Buildings Learning Centre', '', 'KA26 9AL', 'Scotland', NULL, 55.241314, -4.858118, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zliwf007na9r7g1nvc08j', 'glasgow-anniesland', 'Glasgow (Anniesland)', '351 Anniesland Road', '', 'G13 1XS', 'Scotland', NULL, 55.889239, -4.33836, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zliwh007oa9r7wtygav4j', 'glasgow-baillieston', 'Glasgow (Baillieston)', '341 Springhill Parkway', '', 'G69 6GA', 'Scotland', NULL, 55.860147, -4.113897, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zliwk007pa9r78cptesru', 'glasgow-shieldhall', 'Glasgow (Shieldhall)', 'Bogmoor Road', '', 'G51 4TH', 'Scotland', NULL, 55.864157, -4.34911, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zliwn007qa9r71tm7e5w5', 'golspie', 'Golspie', 'Golspie Fire Station', '', 'KW10 6SP', 'Scotland', NULL, 57.972975, -3.983718, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zliwr007ra9r7lhim86sg', 'grangemouth', 'Grangemouth', 'Units 36-37 Evans Easyspace', '', 'FK3 8UU', 'Scotland', NULL, 56.017221, -3.731983, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zliwt007sa9r7gy8cyctq', 'grantown-on-spey', 'Grantown-On-Spey', 'Grantown-on-Spey Fire Station', '', 'PH26 3JR', 'Scotland', NULL, 57.32705, -3.609318, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zliwx007ta9r7z3a5472n', 'greenock', 'Greenock', '19A Union Street', '', 'PA16 8DD', 'Scotland', NULL, 55.952886, -4.769268, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlix1007ua9r7lp901l82', 'haddington', 'Haddington', 'Herdmanflatt', '', 'EH41 3NG', 'Scotland', NULL, 55.960855, -2.782095, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlix5007va9r7am3yofrb', 'hamilton', 'Hamilton', '30 Selkirk Street', '', 'ML3 6RQ', 'Scotland', NULL, 55.769633, -4.041909, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlix9007wa9r735wik1qs', 'hawick', 'Hawick', 'Hawick Burnfoot Community Hub', '', 'TD9 8EJ', 'Scotland', NULL, 55.436313, -2.767247, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlixc007xa9r7dcaqc5cv', 'huntly', 'Huntly', 'Huntly Fire Station', '', 'AB54 8JX', 'Scotland', NULL, 57.444718, -2.793857, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlixg007ya9r71lirhcou', 'inveraray', 'Inveraray', 'The Pier', '', 'PA32 8UY', 'Scotland', NULL, 56.231332, -5.07272, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlixk007za9r7agc08grg', 'inverness-longman-drive', 'Inverness (Longman Drive)', '4 Longman Drive', '', 'IV1 1SU', 'Scotland', NULL, 57.492565, -4.229038, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlixn0080a9r7vijuvqy7', 'inverurie', 'Inverurie', 'Garioch Indoor Bowling Centre', '', 'AB51 4FR', 'Scotland', NULL, 57.293717, -2.388009, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlixq0081a9r7a2re3csh', 'irvine', 'Irvine', 'Century Court', '', 'KA11 5DJ', 'Scotland', NULL, 55.603657, -4.638862, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlixt0082a9r7s05zhzxz', 'islay-island', 'Islay Island', 'Argyll and Bute Council Offices', '', 'PA43 7HL', 'Scotland', NULL, 55.756586, -6.285465, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlixv0083a9r7jh2xx70e', 'isle-of-mull', 'Isle of Mull', 'Post Office', '', 'PA72 6JD', 'Scotland', NULL, 56.517293, -5.944975, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlixz0084a9r7fhe95mk5', 'isle-of-skye-portree', 'Isle of Skye (Portree)', 'Springfield Guest House', '', 'IV51 9LX', 'Scotland', NULL, 57.416774, -6.199464, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zliy20085a9r7wzuyyfcn', 'isle-of-tiree', 'Isle of Tiree', 'The Scarinish Hotel', '', 'PA77 6UH', 'Scotland', NULL, 56.500031, -6.808721, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zliy50086a9r7jvzr5yl5', 'kelso', 'Kelso', 'Lloyd Land Rover', '', 'TD5 8DW', 'Scotland', NULL, 55.590805, -2.424877, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zliy70087a9r7v5wmzmvd', 'kingussie', 'Kingussie', 'Kingussie Shinty Club', '', 'PH21 1EN', 'Scotland', NULL, 57.078603, -4.053786, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zliya0088a9r7ho26syba', 'kirkcaldy', 'Kirkcaldy', '10 Randolph Place', '', 'KY1 2YX', 'Scotland', NULL, 56.135859, -3.125577, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zliye0089a9r7ud23ykau', 'kyle-of-lochalsh', 'Kyle of Lochalsh', 'Kyle of Lochalsh Fire Station', '', 'IV40 8BP', 'Scotland', NULL, 57.280488, -5.720963, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zliyh008aa9r7e9k8r9rn', 'lanark', 'Lanark', 'Lanark Agricultural Centre', '', 'ML11 9AX', 'Scotland', NULL, 55.663011, -3.746855, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zliyk008ba9r7qfqes80b', 'lerwick', 'Lerwick', 'Isleburgh House', '', 'ZE1 0DJ', 'Scotland', NULL, 60.151203, -1.147311, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zliyo008ca9r71t6v4o55', 'livingston', 'Livingston', 'Houston Industrial Estate', '', 'EH54 5DE', 'Scotland', NULL, 55.906177, -3.501426, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zliyr008da9r7hnvo6wo2', 'lochgilphead', 'Lochgilphead', 'Lochgilphead Community Centre', '', 'PA31 8QX', 'Scotland', NULL, 56.036243, -5.427673, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zliyu008ea9r7fv3yxcwe', 'mallaig', 'Mallaig', 'Mallaig and Morar Community Centre', '', 'PH41 4PX', 'Scotland', NULL, 57.006091, -5.830185, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zliyx008fa9r7ardp0sv6', 'montrose', 'Montrose', 'Montrose Fire Station 10 Garrison Road', '', 'DD10 8EE', 'Scotland', NULL, 56.70617, -2.461137, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zliz0008ga9r77tng461w', 'newton-stewart', 'Newton Stewart', 'The Crown Hotel', '', 'DG8 6JW', 'Scotland', NULL, 54.953292, -4.481736, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zliz3008ha9r77x9jr4km', 'oban', 'Oban', 'Cameron House', '', 'PA34 4AE', 'Scotland', NULL, 56.411006, -5.474862, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zliz5008ia9r7anh1voms', 'orkney', 'Orkney', 'The Kirkwall Auction Mart', '', 'KW15 1FL', 'Scotland', NULL, 58.991009, -2.972722, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zliz9008ja9r7s5kb9de2', 'paisley', 'Paisley', '1 West Avenue', '', 'PA1 2FB', 'Scotland', NULL, 55.843824, -4.479303, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlizd008ka9r7hf5spyxs', 'peebles', 'Peebles', 'Tweeddale District Council', '', 'EH45 8DN', 'Scotland', NULL, 55.657469, -3.194137, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlizh008la9r75fw2vi8h', 'perth-arran-road', 'Perth (Arran Road)', 'Arran Road', '', 'PH1 3DZ', 'Scotland', NULL, 56.416975, -3.457932, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlizm008ma9r7ndsopx6o', 'peterhead', 'Peterhead', 'Suite 21', '', 'AB42 3AW', 'Scotland', NULL, 57.487082, -1.801753, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlizp008na9r7nd8lny7t', 'pitlochry', 'Pitlochry', 'The Hall', '', 'PH16 5EA', 'Scotland', NULL, 56.70562, -3.733262, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlizt008oa9r7ezqxt4dm', 'rothesay', 'Rothesay', 'C/O Dept. of Employment', '', 'PA20 0DE', 'Scotland', NULL, 55.836318, -5.055953, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlizx008pa9r7pp3z0rr7', 'stirling', 'Stirling', 'Government Buildings', '', 'FK8 2HF', 'Scotland', NULL, 56.110554, -3.939523, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlj00008qa9r7cswkwuy6', 'stornoway', 'Stornoway', 'Fishermans Mission', '', 'HS1 2XX', 'Scotland', NULL, 58.207766, -6.391175, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlj03008ra9r756h32sdy', 'stranraer', 'Stranraer', 'Northwest Castle Hotel', '', 'DG9 8EH', 'Scotland', NULL, 54.90498, -5.021183, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlj06008sa9r7b1221df3', 'thurso', 'Thurso', 'Naver House', '', 'KW14 7QA', 'Scotland', NULL, 58.592282, -3.536561, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlj0b008ta9r7mzbha18r', 'ullapool', 'Ullapool', 'Ullapool Fire Station', '', 'IV26 2UW', 'Scotland', NULL, 57.898814, -5.15918, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlj0e008ua9r7zbobahwa', 'wick', 'Wick', 'Airport Industrial Estate', '', 'KW1 4QS', 'Scotland', NULL, 58.450302, -3.090472, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlii2003ua9r7veu3m20o', 'ashford-kent', 'Ashford (Kent)', '18/19 Fir Tree Place', '', 'TW15 2PJ', 'South-east England', NULL, 51.432513, -0.461897, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlii6003va9r7cehx1yju', 'aylesbury', 'Aylesbury', 'Unit 9 Ground Floor', '', 'HP19 8JR', 'South-east England', NULL, 51.822232, -0.843134, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlii9003wa9r7w96566jj', 'banbury', 'Banbury', 'Ermont Way', '', 'OX16 4AE', 'South-east England', NULL, 52.071201, -1.318048, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zliic003xa9r7mw3ufeq0', 'basingstoke', 'Basingstoke', 'Brighton Hill Centre', '', 'RG22 4LR', 'South-east England', NULL, 51.244771, -1.114018, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zliif003ya9r7emwzobje', 'burgess-hill', 'Burgess Hill', 'Off Charles Avenue', '', 'RH15 9AG', 'South-east England', NULL, 50.951148, -0.152715, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zliij003za9r7pkyn821m', 'canterbury', 'Canterbury', '25 New Dover Road', '', 'CT1 3AS', 'South-east England', NULL, 51.274996, 1.088078, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zliio0040a9r7806iyns3', 'chichester', 'Chichester', 'York House', '', 'PO20 2FR', 'South-east England', NULL, 50.853028, -0.711001, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zliis0041a9r7higv8l2w', 'crawley', 'Crawley', 'Unit 2 The Pavillions', '', 'RH11 9BJ', 'South-east England', NULL, 51.080939, -0.201718, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zliiv0042a9r7e7m2yw1s', 'eastbourne', 'Eastbourne', '1 Coastguard Cottages', '', 'BN22 7PT', 'South-east England', NULL, 50.782493, 0.309636, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zliix0043a9r7mysmw9o6', 'farnborough', 'Farnborough', '35 Hercules Way', '', 'GU14 6UU', 'South-east England', NULL, 51.274302, -0.771922, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zliiz0044a9r75wpclji5', 'folkestone', 'Folkestone', 'Palting House', '', 'CT20 2RH', 'South-east England', NULL, 51.079128, 1.167798, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlij10045a9r7keqbj7ao', 'gillingham', 'Gillingham', 'Unit 1', '', 'ME8 0RZ', 'South-east England', NULL, 51.36481, 0.580133, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlij30046a9r7lolkzx6o', 'greenham', 'Greenham', 'Off Buckner Croke Way', '', 'RG19 6HX', 'South-east England', NULL, 51.377028, -1.290761, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlij70047a9r7imvgn9f1', 'guildford', 'Guildford', 'Slyfield Industrial Estate', '', 'GU1 1SA', 'South-east England', NULL, 51.259401, -0.56488, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlija0048a9r7dgot4y18', 'hastings-ore', 'Hastings (Ore)', 'Hastings Centre', '', 'TN34 2SA', 'South-east England', NULL, 50.88676, 0.569904, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlije0049a9r7z7haxxh0', 'herne-bay', 'Herne Bay', 'Altria Business Park', '', 'CT6 6GZ', 'South-east England', NULL, 51.361942, 1.150016, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlijg004aa9r7m2tv7yyt', 'high-wycombe', 'High Wycombe', 'Regus', '', 'HP11 1JU', 'South-east England', NULL, 51.61126, -0.704634, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlijk004ba9r7t1ythjn7', 'lee-on-the-solent', 'Lee On The Solent', 'The Richard Sainsbury Building', '', 'PO13 9FX', 'South-east England', NULL, 50.810143, -1.203609, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlijp004ca9r77ox1h9uz', 'maidstone', 'Maidstone', 'Unit 1 North Court', '', 'ME15 6JZ', 'South-east England', NULL, 51.260864, 0.525958, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlijs004da9r7r5xep2f5', 'newport-isle-of-wight', 'Newport (Isle of Wight)', 'Innovation Centre', '', 'PO30 5WB', 'South-east England', NULL, 50.712743, -1.296094, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlijw004ea9r71n0bv9mm', 'oxford-cowley', 'Oxford (Cowley)', 'James Wolfe Road', '', 'OX4 2PY', 'South-east England', NULL, 51.740689, -1.201358, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlijy004fa9r7o2wmrcbj', 'portsmouth', 'Portsmouth', 'Opposite Fort Southwick', '', 'PO17 6AR', 'South-east England', NULL, 50.857615, -1.108871, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlik2004ga9r70vzad9is', 'reading', 'Reading', 'The Holiday Inn', '', 'RG2 0SL', 'South-east England', NULL, 51.421331, -0.970497, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlik6004ha9r7hofa6b4z', 'redhill-aerodrome', 'Redhill Aerodrome', 'First Floor', '', 'RH1 5JZ', 'South-east England', NULL, 51.216751, -0.143508, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlika004ia9r7p6lufudd', 'sevenoaks', 'Sevenoaks', '45 Argyle Road', '', 'TN13 1HJ', 'South-east England', NULL, 51.272128, 0.18864, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlike004ja9r7osgmtofg', 'southampton-maybush', 'Southampton (Maybush)', 'Forest Hills Drive', '', 'SO18 2FY', 'South-east England', NULL, 50.934243, -1.365248, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zliki004ka9r710buaxkp', 'tunbridge-wells', 'Tunbridge Wells', '8 Upper Grosvenor Road', '', 'TN1 2ES', 'South-east England', NULL, 51.136357, 0.264109, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlien002ha9r70fr3kkfp', 'west-wickham-london', 'West Wickham (London)', '56 Glebe Way', '', 'BR4 0RL', 'South-east England', NULL, 51.375078, -0.011297, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlikm004la9r71i1z7j2h', 'winchester', 'Winchester', 'Christchurch Road', '', 'SO23 9SY', 'South-east England', NULL, 51.056444, -1.322086, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlikp004ma9r75phdigo8', 'worthing', 'Worthing', 'Worthing', '', 'BN131NP', 'South-east England', NULL, 50.820081, -0.409426, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlikt004na9r7axnkboal', 'barnstaple', 'Barnstaple', 'Unit 1A', '', 'EX31 1AB', 'South-west England', NULL, 51.085023, -4.082581, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlikw004oa9r7hehnj0ae', 'bodmin', 'Bodmin', 'Units 32 - 36', '', 'PL31 1EN', 'South-west England', NULL, 50.460825, -4.707069, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlil2004pa9r766qruegy', 'bristol-avonmouth', 'Bristol (Avonmouth)', 'Unit M6', '', 'BS11 8AQ', 'South-west England', NULL, 51.516372, -2.681255, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlil6004qa9r70g34wa2n', 'bristol-kingswood', 'Bristol (Kingswood)', 'The Siston Centre', '', 'BS15 4GQ', 'South-west England', NULL, 51.47172, -2.488294, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlila004ra9r7ylfi8fs5', 'camborne', 'Camborne', 'Carn Brea Hubb', '', 'TR15 3QS', 'South-west England', NULL, 50.224086, -5.267034, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlilf004sa9r7916yemt6', 'cheltenham', 'Cheltenham', 'Bishopsgate House', '', 'GL52 2HQ', 'South-west England', NULL, 51.90346, -2.064931, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlilk004ta9r70yhmujfi', 'chippenham', 'Chippenham', 'Unit 11', '', 'SN14 6LH', 'South-west England', NULL, 51.46482, -2.142746, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlilo004ua9r78x9fj2er', 'dorchester', 'Dorchester', '66 Peverell Avenue West', '', 'DT1 3SU', 'South-west England', NULL, 50.714022, -2.469154, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlils004va9r7231p4ll6', 'exeter', 'Exeter', 'Thorverton Road', '', 'EX2 8FS', 'South-west England', NULL, 50.698622, -3.516565, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlilw004wa9r7xvr6027o', 'gloucester', 'Gloucester', 'Falcon Close', '', 'GL2 4LY', 'South-west England', NULL, 51.833797, -2.276296, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlim0004xa9r7h4im1d6u', 'launceston', 'Launceston', 'Suite 4 Sheers Barton Barns', '', 'PL15 9NJ', 'South-west England', NULL, 50.612197, -4.330611, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlim4004ya9r7pcuvl8ic', 'newton-abbot', 'Newton Abbot', 'Vander House', '', 'TQ12 4YQ', 'South-west England', NULL, 50.52734, -3.597216, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlim7004za9r721ptiget', 'penzance', 'Penzance', '1 Alverton Terrace', '', 'TR18 4JH', 'South-west England', NULL, 50.118296, -5.542124, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlima0050a9r79qaosj0s', 'plymouth', 'Plymouth', 'Ernesettle Lane', '', 'PL5 2EY', 'South-west England', NULL, 50.412703, -4.181958, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlimf0051a9r7v1z5zisv', 'poole', 'Poole', '4 - 20 Harwell Road', '', 'BH17 0SA', 'South-west England', NULL, 50.741006, -1.975664, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlimk0052a9r7wkburv70', 'salisbury', 'Salisbury', '14 Rougemont Close', '', 'SP1 1LY', 'South-west England', NULL, 51.071912, -1.788188, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlimo0053a9r79sszrzk4', 'swindon', 'Swindon', '1 Fenn Close', '', 'SN5 5BL', 'South-west England', NULL, 51.574998, -1.832425, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlimr0054a9r7szxqo1mk', 'taunton', 'Taunton', 'Unit L2', '', 'TA2 8RX', 'South-west England', NULL, 51.027793, -3.08054, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlimv0055a9r7mojuti1z', 'trowbridge', 'Trowbridge', 'Longfield Community Centre', '', 'BA14 7DZ', 'South-west England', NULL, 51.313904, -2.202237, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlimz0056a9r7uoz3qoap', 'weston-super-mare', 'Weston-super-Mare', 'Plot 11', '', 'BS23 3PZ', 'South-west England', NULL, 51.341069, -2.972677, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlin30057a9r7bu5sjc34', 'yeovil', 'Yeovil', 'Suite 2', '', 'BA20 2EN', 'South-west England', NULL, 50.943719, -2.660903, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlj0j008va9r7u8eop2lb', 'abergavenny', 'Abergavenny', 'Station Road', '', 'NP7 5HT', 'Wales', NULL, 51.815974, -3.010609, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlj0m008wa9r7evlpoxn3', 'aberystwyth-park-avenue', 'Aberystwyth (Park Avenue)', 'Aberystwyth Football Club', '', 'SY23 1PG', 'Wales', NULL, 52.40997, -4.081257, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlj0r008xa9r7e6hjvbij', 'bala', 'Bala', 'Unit 4', '', 'LL23 7SP', 'Wales', NULL, 52.908878, -3.600261, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlj0v008ya9r76xtcc38m', 'bangor', 'Bangor', 'Llandegai Industrial Estate', '', 'LL57 4YH', 'Wales', NULL, 53.217985, -4.111526, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlj11008za9r7web15m4i', 'barry', 'Barry', 'Unit 16', '', 'CF62 5QN', 'Wales', NULL, 51.399702, -3.279255, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlj140090a9r7c7a1f951', 'brecon', 'Brecon', 'Camden Road', '', 'LD3 7RY', 'Wales', NULL, 51.944162, -3.379797, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlj190091a9r71s2b48jr', 'bridgend', 'Bridgend', 'Crown Building', '', 'CF31 4AD', 'Wales', NULL, 51.505273, -3.57996, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlj1e0092a9r7jdyuvlmy', 'cardiff-llanishen', 'Cardiff (Llanishen)', 'Thornbury House', '', 'CF14 5GF', 'Wales', NULL, 51.522615, -3.191498, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlj1j0093a9r78mulf9km', 'cardigan', 'Cardigan', 'Crown Buildings', '', 'SA43 1ED', 'Wales', NULL, 52.085124, -4.657929, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlj1n0094a9r7m0wpyoh7', 'carmarthen', 'Carmarthen', 'Ty Myrddin', '', 'SA31 1GS', 'Wales', NULL, 51.856053, -4.302854, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlj1s0095a9r7sjqzr7y7', 'llanelli', 'Llanelli', 'Toft Place', '', 'SA15 3SB', 'Wales', NULL, 51.686081, -4.155556, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlj1y0096a9r7q1i2kh4j', 'llantrisant', 'Llantrisant', 'School Road', '', 'CF72 8YR', 'Wales', NULL, 51.524185, -3.365064, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlj230097a9r7v058dpf7', 'merthyr-tydfil', 'Merthyr Tydfil', 'Merthyr Industrial Park', '', 'CF48 4DR', 'Wales', NULL, 51.720077, -3.355626, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlj280098a9r7wrgsixgk', 'monmouth', 'Monmouth', 'Old Dixon Road', '', 'NP25 3DP', 'Wales', NULL, 51.813644, -2.709809, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlj2f0099a9r7yin5fy55', 'newport-gwent', 'Newport (Gwent)', 'Stephenson Street', '', 'NP19 4XB', 'Wales', NULL, 51.570321, -2.971517, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlj2j009aa9r7gqx9sofh', 'newtown', 'Newtown', 'Ladywell House', '', 'SY16 1JB', 'Wales', NULL, 52.513212, -3.315931, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlj2p009ba9r741fp1vl9', 'pembroke-dock', 'Pembroke Dock', 'The Captain Superintendents Building', '', 'SA72 6TD', 'Wales', NULL, 51.696382, -4.95406, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlj2t009ca9r7ja8xpkzp', 'pwllheli', 'Pwllheli', '33A Cardiff Road', '', 'LL53 5NT', 'Wales', NULL, 52.88072, -4.42331, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlj2x009da9r7u3u3c6is', 'rhyl', 'Rhyl', 'Victoria Road', '', 'LL18 2EL', 'Wales', NULL, 53.314868, -3.48565, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlj31009ea9r7p3w8sb8e', 'swansea', 'Swansea', 'Burrows Rd', '', 'SA1 8QY', 'Wales', NULL, 51.620582, -3.924568, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlj38009fa9r7qhlqgarh', 'wrexham', 'Wrexham', '1 Birchall House', '', 'LL13 7YX', 'Wales', NULL, 53.048817, -3.010928, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlin60058a9r7nt9atbwt', 'birmingham-cocks-moors', 'Birmingham (Cocks Moors)', '110 - 116 Boldmere Road', '', 'B73 5UB', 'West Midlands', NULL, 52.547565, -1.84123, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlin90059a9r7kkh9oay3', 'birmingham-garretts-green', 'Birmingham (Garretts Green)', '48 Granby Avenue', '', 'B33 0SD', 'West Midlands', NULL, 52.472708, -1.771278, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zline005aa9r7gmtoq6uc', 'birmingham-kings-heath', 'Birmingham (Kings Heath)', '955 Alcester Road South', '', 'B14 5JA', 'West Midlands', NULL, 52.406025, -1.887116, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlinh005ba9r7yrfy8eim', 'birmingham-kingstanding', 'Birmingham (Kingstanding)', '205 Birdbrook Road', '', 'B44 9UL', 'West Midlands', NULL, 52.543881, -1.89048, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlinl005ca9r7ek6ay0wl', 'birmingham-shirley', 'Birmingham (Shirley)', '401 Stratford Road', '', 'B90 4AA', 'West Midlands', NULL, 52.4043, -1.822019, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlino005da9r7plmh3kl5', 'birmingham-south-yardley', 'Birmingham (South Yardley)', 'Clay Lane', '', 'B26 1EA', 'West Midlands', NULL, 52.453979, -1.810092, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlinr005ea9r7z6vrbeoq', 'burton-on-trent', 'Burton on Trent', 'Wellington Park', '', 'DE14 2TG', 'West Midlands', NULL, 52.796211, -1.657231, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlinv005fa9r7a18jwe95', 'coventry', 'Coventry', 'Bayton Road Industrial Estate', '', 'CV7 9EJ', 'West Midlands', NULL, 52.463794, -1.475152, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zliny005ga9r7o8zics5u', 'dudley', 'Dudley', 'Newton House', '', 'DY6 7YE', 'West Midlands', NULL, 52.501812, -2.154174, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlio1005ha9r7hk0jr14z', 'featherstone', 'Featherstone', 'Driving Test Centre Featherstone LGV', '', 'WV10 7JD', 'West Midlands', NULL, 52.640545, -2.11383, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlio3005ia9r7hua7n4hs', 'hereford', 'Hereford', '1', '', 'HR4 9NS', 'West Midlands', NULL, 52.066506, -2.729362, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlioa005ja9r7gw6qpfwn', 'lichfield', 'Lichfield', 'Lower Sanford Street', '', 'WS13 6RB', 'West Midlands', NULL, 52.681533, -1.834978, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zliod005ka9r7cfhrj8t5', 'ludlow', 'Ludlow', 'Unit 1', '', 'SY8 1FD', 'West Midlands', NULL, 52.366016, -2.692999, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zliog005la9r716qb71j5', 'nuneaton', 'Nuneaton', '54 Vernons Lane', '', 'CV10 8AA', 'West Midlands', NULL, 52.52458, -1.488385, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlioj005ma9r7nir80xci', 'oswestry', 'Oswestry', 'Mile Oak Industrial Estate', '', 'SY10 8GA', 'West Midlands', NULL, 52.844957, -3.042145, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zliom005na9r7j5gyk896', 'redditch', 'Redditch', 'Elm Road', '', 'B97 6HJ', 'West Midlands', NULL, 52.308551, -1.947028, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zliop005oa9r7qsufjxzy', 'rugby', 'Rugby', 'Aspect House', '', 'CV22 7DH', 'West Midlands', NULL, 52.371041, -1.287521, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlior005pa9r718o0pa6j', 'shrewsbury', 'Shrewsbury', 'Stafford Drive', '', 'SY1 3BF', 'West Midlands', NULL, 52.74598, -2.736462, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zliow005qa9r74fsj161g', 'stafford', 'Stafford', 'Unit 7', '', 'ST16 2RF', 'West Midlands', NULL, 52.812621, -2.124505, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlip0005ra9r75jvw5vkk', 'stoke-on-trent-cobridge', 'Stoke-on-Trent (Cobridge)', '8 Elder Road', '', 'ST6 2HE', 'West Midlands', NULL, 53.040319, -2.188028, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlip5005sa9r7551fx2sn', 'stoke-on-trent-newcastle-under-lyme', 'Stoke-on-Trent (Newcastle-Under-Lyme)', 'Parklands', '', 'ST4 6PQ', 'West Midlands', NULL, 52.996348, -2.212167, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlip9005ta9r7ga8rhaqx', 'telford', 'Telford', '35 Horton Wood', '', 'TF1 7FR', 'West Midlands', NULL, 52.720402, -2.465557, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlipd005ua9r7xkx3v5sd', 'warwick-wedgenock-house', 'Warwick (Wedgenock House)', 'Ground Floor Wedgnock House Wedgnock Lane', '', 'CV34 5AP', 'West Midlands', NULL, 52.294691, -1.597924, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlipg005va9r7wqq5y25m', 'wednesbury', 'Wednesbury', 'Knowles Street', '', 'WS10 9HN', 'West Midlands', NULL, 52.554872, -2.012415, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlipk005wa9r7u82gb7bu', 'wolverhampton', 'Wolverhampton', '121 Spring Road', '', 'WV4 6JX', 'West Midlands', NULL, 52.563665, -2.102242, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlipo005xa9r706l1130g', 'worcester', 'Worcester', 'Stanier Road', '', 'WR4 9FE', 'West Midlands', NULL, 52.214001, -2.178041, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlips005ya9r7vo4gzp6l', 'barnsley', 'Barnsley', 'West Road', '', 'S75 2DH', 'Yorkshire and the Humber', NULL, 53.554533, -1.502402, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlipw005za9r7vavhtyqn', 'beverley-lgv', 'Beverley LGV', 'Old Beck Road', '', 'HU17 0JG', 'Yorkshire and the Humber', NULL, 53.843299, -0.404741, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlipz0060a9r734dsagb4', 'bradford-heaton', 'Bradford (Heaton)', '15 Farfield Street', '', 'BD9 5AS', 'Yorkshire and the Humber', NULL, 53.808888, -1.78401, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zliq50061a9r7ihq9akba', 'bradford-thornbury', 'Bradford (Thornbury)', 'The Courtyard', '', 'BD3 7AY', 'Yorkshire and the Humber', NULL, 53.79869, -1.704889, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zliq90062a9r7b6w0r1oq', 'bridlington', 'Bridlington', 'Bessingby Industrial Estate', '', 'YO16 4SF', 'Yorkshire and the Humber', NULL, 54.08113, -0.211415, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zliqe0063a9r7oxe67iqj', 'doncaster', 'Doncaster', 'Unit 10 & 11 Heather Court', '', 'DN2 5YL', 'Yorkshire and the Humber', NULL, 53.543031, -1.086532, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlibg001ba9r7s5k2pi59', 'grimsby-coldwater', 'Grimsby Coldwater', 'Estate Road 1', '', 'DN31 2TB', 'Yorkshire and the Humber', NULL, 53.580895, -0.115552, '2026-05-12 18:51:30', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zliqi0064a9r7als6h3m4', 'halifax', 'Halifax', '11 Cross Street West', '', 'HX2 0HA', 'Yorkshire and the Humber', NULL, 53.729885, -1.891454, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zliqm0065a9r7pakt6s1x', 'heckmondwike', 'Heckmondwike', 'Tower Buildings', '', 'WF16 0AS', 'Yorkshire and the Humber', NULL, 53.707374, -1.671411, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zliqq0066a9r7akdb3otg', 'horsforth', 'Horsforth', 'Room 013 Woodside House', '', 'LS18 5NY', 'Yorkshire and the Humber', NULL, 53.839811, -1.621928, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zliqv0067a9r7g6h6ortj', 'huddersfield', 'Huddersfield', 'Waverley House', '', 'HD1 5NA', 'Yorkshire and the Humber', NULL, 53.649399, -1.791056, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zliqy0068a9r7l6cdwjw9', 'hull', 'Hull', 'Reservoir Road', '', 'HU6 7PY', 'Yorkshire and the Humber', NULL, 53.767909, -0.335255, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlir40069a9r7a1d6w6gy', 'knaresborough', 'Knaresborough', 'Ground Floor Unit 9', '', 'HG5 8QB', 'Yorkshire and the Humber', NULL, 54.001288, -1.444051, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlira006aa9r7tf2wrqeh', 'leeds-colton-mill', 'Leeds (Colton Mill)', 'Unit 1, Colton Mill Office Park', '', 'LS15 9JN', 'Yorkshire and the Humber', NULL, 53.792039, -1.430289, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlire006ba9r78rltpv1o', 'leeds-fearnville', 'Leeds (Fearnville)', 'Fearnville Leisure Centre', '', 'LS8 3LF', 'Yorkshire and the Humber', NULL, 53.816886, -1.491102, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zliri006ca9r7uddlbdc4', 'malton', 'Malton', '3 Milton Avenue', '', 'YO17 7LB', 'Yorkshire and the Humber', NULL, 54.140671, -0.790509, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlirm006da9r751asbk38', 'pontefract', 'Pontefract', '7 Flemming Course', '', 'WF10 5HW', 'Yorkshire and the Humber', NULL, 53.707784, -1.340574, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlirp006ea9r7350xof4z', 'rotherham', 'Rotherham', 'Mangham Way', '', 'S61 4RL', 'Yorkshire and the Humber', NULL, 53.442217, -1.358134, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlirt006fa9r7oqu5lt3q', 'scarborough', 'Scarborough', 'Falsgrave Community Centre', '', 'YO12 4AY', 'Yorkshire and the Humber', NULL, 54.261647, -0.416998, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlirz006ga9r73w4h10lk', 'scunthorpe', 'Scunthorpe', 'Onward Way', '', 'DN15 6AS', 'Yorkshire and the Humber', NULL, 53.598552, -0.651513, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlis5006ha9r7lj3fuwr8', 'sheffield-handsworth', 'Sheffield (Handsworth)', 'Orgreave Way', '', 'S13 9LT', 'Yorkshire and the Humber', NULL, 53.369024, -1.365139, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlisa006ia9r7ftan3v4w', 'sheffield-middlewood-road', 'Sheffield (Middlewood Road)', 'Grenoside Community Centre', '', 'S35 8PR', 'Yorkshire and the Humber', NULL, 53.44296, -1.502937, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlise006ja9r79qrhwy2u', 'skipton', 'Skipton', 'Foundry House', '', 'BD23 2BE', 'Yorkshire and the Humber', NULL, 53.953658, -2.022993, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlisj006ka9r7v55bscin', 'wakefield', 'Wakefield', 'Mothers Way', '', 'WF5 9TG', 'Yorkshire and the Humber', NULL, 53.684536, -1.544767, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlisn006la9r7a994qk4m', 'walton-lgv', 'Walton LGV', 'Wighill Lane', '', 'LS23 7DU', 'Yorkshire and the Humber', NULL, 53.921323, -1.322843, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlisr006ma9r7da41w5y3', 'whitby', 'Whitby', 'Unit F11', '', 'YO22 4ET', 'Yorkshire and the Humber', NULL, 54.482499, -0.608144, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
+INSERT INTO `TestCentre` (`id`, `slug`, `name`, `addressLine1`, `town`, `postcode`, `region`, `passRate`, `latitude`, `longitude`, `createdAt`, `updatedAt`) VALUES ('cmp2zlisv006na9r754g8yy6p', 'york', 'York', 'Arabesque House (Unit 2)', '', 'YO32 9GW', 'Yorkshire and the Humber', NULL, 53.988983, -1.049142, '2026-05-12 18:51:31', '2026-05-22 08:48:14');
