@@ -1,27 +1,21 @@
 /**
- * Production Sync Script — DTC → MMT
- * 
- * Uses DTC_DATABASE_URL from .env to connect to DTC database.
- * Reads ACTIVE TestSwapListings from DTC and creates/updates shadow
- * records in MMT's Listing table with source='DTC'.
- * 
- * Safety: SELECT-only on DTC. Only writes to MMT.
- * 
- * Usage:
- *   npx tsx src/scripts/sync-production.ts        (dry run)
- *   npx tsx src/scripts/sync-production.ts --live (actual sync)
+ * Production Sync Script — MMT → DTC
+ *
+ * Syncs MMT listings to DTC's TestSwapListing table.
+ * Uses MMT_DATABASE_URL from .env to connect to DTC database.
+ * Only writes to DTC TestSwapListing table.
+ *
+ * Safety: SELECT from MMT. INSERT/UPDATE to DTC only.
  */
 
 import { PrismaClient } from "@prisma/client";
 
-// Database names from connection URLs
-// Database names extracted from connection URLs
-const DTC_DB = process.env.DTC_DATABASE_URL?.split("/").pop()?.split("?")[0] ?? "u385361430_N";
-const MMT_DB = process.env.DATABASE_URL?.split("/").pop()?.split("?")[0] ?? "movemytest";
+const MMT_DB = process.env.DATABASE_URL?.split("/").pop()?.split("?")[0] ?? "u385361430_movedata";
+const DTC_DB = process.env.MMT_DATABASE_URL?.split("/").pop()?.split("?")[0] ?? "u385361430_N";
 
-// Safety check — only allow known database names
-if (!DTC_DB || !MMT_DB) {
-  console.error("[Sync] Missing database configuration. Set DTC_DATABASE_URL and DATABASE_URL in .env");
+// Validate we have both URLs
+if (!process.env.DATABASE_URL || !process.env.MMT_DATABASE_URL) {
+  console.error("[Sync] Missing DATABASE_URL or MMT_DATABASE_URL in .env");
   process.exit(1);
 }
 
@@ -32,53 +26,57 @@ interface SyncResult {
   durationMs: number;
 }
 
-async function syncDtcToMmt(): Promise<SyncResult> {
+async function syncMmtToDtc(): Promise<SyncResult> {
   const start = Date.now();
   const result: SyncResult = { synced: 0, withdrawn: 0, errors: 0, durationMs: 0 };
 
-  const prisma = new PrismaClient();
+  const prisma = new PrismaClient({
+    datasources: {
+      db: {
+        url: process.env.MMT_DATABASE_URL,
+      },
+    },
+  });
 
   try {
-    // ── Step 1: Count DTC listings ──
+    // Step 1: Count MMT listings
     const countResult = await prisma.$queryRawUnsafe<{ count: number }[]>(
-      `SELECT COUNT(*) as count FROM ${DTC_DB}.TestSwapListing WHERE status = 'ACTIVE' AND expiresAt > NOW()`
+      `SELECT COUNT(*) as count FROM ${MMT_DB}.Listing WHERE status = 'ACTIVE' AND source = 'MMT' AND expiresAt > NOW()`
     );
-    const dtcCount = Number(countResult[0]?.count ?? 0);
-    console.log(`[Sync] DTC has ${dtcCount} ACTIVE listings`);
+    const mmtCount = Number(countResult[0]?.count ?? 0);
+    console.log(`[Sync] MMT has ${mmtCount} ACTIVE listings`);
 
-    // ── Step 2: Get DTC listings ──
-    const dtcListings = await prisma.$queryRawUnsafe<any[]>(
-      `SELECT 
+    // Step 2: Get MMT listings
+    const mmtListings = await prisma.$queryRawUnsafe<any[]>(
+      `SELECT
          l.id, l.currentCentreId, l.originalCentreId, l.currentDateTime,
          l.testType, l.hasRemainingChange, l.desiredDateFrom, l.desiredDateTo,
          l.desiredTimePreference, l.desiredCentreIds, l.desiredDirection,
          l.status, l.jurisdiction, l.expiresAt, l.createdAt, l.updatedAt
-       FROM ${DTC_DB}.TestSwapListing l
-       WHERE l.status = 'ACTIVE' AND l.expiresAt > NOW()
+       FROM ${MMT_DB}.Listing l
+       WHERE l.status = 'ACTIVE' AND l.source = 'MMT' AND l.expiresAt > NOW()
        LIMIT 500`
     );
 
-    console.log(`[Sync] Fetched ${dtcListings.length} listings from DTC`);
+    console.log(`[Sync] Fetched ${mmtListings.length} listings from MMT`);
 
-    // ── Step 3: Get existing shadow IDs ──
-    const existing = await prisma.$queryRawUnsafe<{ dtcListingId: string }[]>(
-      `SELECT dtcListingId FROM ${MMT_DB}.Listing WHERE source = 'DTC'`
+    // Step 3: Get existing shadow IDs in DTC
+    const existing = await prisma.$queryRawUnsafe<{ id: string }[]>(
+      `SELECT id FROM ${DTC_DB}.TestSwapListing WHERE source = 'MMT'`
     );
-    const existingIds = new Set(existing.map((e) => e.dtcListingId));
-    const dtcIds = new Set(dtcListings.map((l) => l.id));
+    const existingIds = new Set(existing.map((e) => e.id));
+    const mmtIds = new Set(mmtListings.map((l) => l.id));
 
-    // ── Step 4: Upsert DTC listings into MMT ──
-    for (const row of dtcListings) {
+    // Step 4: Upsert MMT listings into DTC
+    for (const row of mmtListings) {
       try {
         const data = {
-          source: "DTC",
-          dtcListingId: row.id,
-          accountId: null,
+          id: row.id,
           currentCentreId: row.currentCentreId,
           originalCentreId: row.originalCentreId,
           currentDateTime: new Date(row.currentDateTime),
           testType: row.testType,
-          hasRemainingChange: row.hasRemainingChange === 1 || row.hasRemainingChange === true,
+          hasRemainingChange: row.hasRemainingChange,
           desiredDateFrom: new Date(row.desiredDateFrom),
           desiredDateTo: new Date(row.desiredDateTo),
           desiredTimePreference: row.desiredTimePreference || "ANY",
@@ -94,12 +92,12 @@ async function syncDtcToMmt(): Promise<SyncResult> {
         if (existingIds.has(row.id)) {
           // Update existing shadow
           await prisma.$executeRawUnsafe(
-            `UPDATE ${MMT_DB}.Listing SET 
+            `UPDATE ${DTC_DB}.TestSwapListing SET
                currentCentreId = ?, originalCentreId = ?, currentDateTime = ?,
                testType = ?, hasRemainingChange = ?, desiredDateFrom = ?, desiredDateTo = ?,
                desiredTimePreference = ?, desiredCentreIds = ?, desiredDirection = ?,
                status = ?, jurisdiction = ?, expiresAt = ?, updatedAt = NOW()
-             WHERE dtcListingId = ? AND source = 'DTC'`,
+             WHERE id = ? AND source = 'MMT'`,
             data.currentCentreId, data.originalCentreId, data.currentDateTime,
             data.testType, data.hasRemainingChange, data.desiredDateFrom, data.desiredDateTo,
             data.desiredTimePreference, data.desiredCentreIds, data.desiredDirection,
@@ -108,12 +106,12 @@ async function syncDtcToMmt(): Promise<SyncResult> {
         } else {
           // Insert new shadow
           await prisma.$executeRawUnsafe(
-            `INSERT INTO ${MMT_DB}.Listing 
-             (id, source, dtcListingId, accountId, currentCentreId, originalCentreId, currentDateTime,
+            `INSERT INTO ${DTC_DB}.TestSwapListing
+             (id, currentCentreId, originalCentreId, currentDateTime,
               testType, hasRemainingChange, desiredDateFrom, desiredDateTo, desiredTimePreference,
               desiredCentreIds, desiredDirection, status, jurisdiction, expiresAt, createdAt, updatedAt)
-             VALUES (UUID(), ?, ?, NULL, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
-            data.source, data.dtcListingId, data.currentCentreId, data.originalCentreId, data.currentDateTime,
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
+            data.id, data.currentCentreId, data.originalCentreId, data.currentDateTime,
             data.testType, data.hasRemainingChange, data.desiredDateFrom, data.desiredDateTo,
             data.desiredTimePreference, data.desiredCentreIds, data.desiredDirection,
             data.status, data.jurisdiction, data.expiresAt, data.createdAt
@@ -126,12 +124,12 @@ async function syncDtcToMmt(): Promise<SyncResult> {
       }
     }
 
-    // ── Step 5: Withdraw stale listings ──
-    const withdrawnIds = Array.from(existingIds).filter((id) => !dtcIds.has(id));
+    // Step 5: Withdraw stale listings
+    const withdrawnIds = Array.from(existingIds).filter((id) => !mmtIds.has(id));
     if (withdrawnIds.length > 0) {
       await prisma.$executeRawUnsafe(
-        `UPDATE ${MMT_DB}.Listing SET status = 'EXPIRED', updatedAt = NOW()
-         WHERE source = 'DTC' AND dtcListingId IN (${withdrawnIds.map(() => "?").join(",")})`,
+        `UPDATE ${DTC_DB}.TestSwapListing SET status = 'EXPIRED', updatedAt = NOW()
+         WHERE source = 'MMT' AND id IN (${withdrawnIds.map(() => "?").join(",")})`,
         ...withdrawnIds
       );
       result.withdrawn = withdrawnIds.length;
@@ -146,7 +144,7 @@ async function syncDtcToMmt(): Promise<SyncResult> {
   }
 }
 
-// ── Run ──
-syncDtcToMmt()
+// Run
+syncMmtToDtc()
   .then((r) => process.exit(r.errors > 0 ? 1 : 0))
   .catch((e) => { console.error(e); process.exit(1); });
