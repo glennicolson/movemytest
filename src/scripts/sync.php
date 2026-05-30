@@ -3,6 +3,7 @@
 // Run: php /home/u385361430/scripts/sync.php
 // Cron: */5 * * * * php /home/u385361430/scripts/sync.php >> /home/u385361430/logs/sync.log 2>&1
 
+// ── Load .env ──
 $envFile = '/home/u385361430/domains/movemytest.co.uk/public_html/.builds/config/.env';
 if (file_exists($envFile)) {
     $lines = file($envFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
@@ -58,7 +59,6 @@ foreach ($listings as $row) {
     $synced++;
 }
 
-// Withdraw stale
 $currentIds = array_flip(array_column($listings, 'id'));
 $withdrawnIds = array_diff(array_keys($existingIds), array_keys($currentIds));
 if (count($withdrawnIds) > 0) {
