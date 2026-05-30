@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import "@/app/globals.css";
 import { SiteHeader } from "@/components/movemytest/site-header";
+import { SiteFooter } from "@/components/movemytest/site-footer";
+import { CookieConsentBanner } from "@/components/movemytest/cookie-consent";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://movemytest.co.uk"),
@@ -28,7 +30,11 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
       </head>
       <body spellCheck>
         <SiteHeader />
-        {children}
+        <div className="flex min-h-screen flex-col">
+          <main className="flex-1">{children}</main>
+          <SiteFooter />
+        </div>
+        <CookieConsentBanner />
       </body>
     </html>
   );
