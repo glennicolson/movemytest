@@ -1,7 +1,6 @@
 <?php
-// DTC -> MMT Sync - DEBUG VERSION (v2)
+// DTC -> MMT Sync - DEBUG VERSION (v3)
 
-// ── Debug: Show current time ──
 echo "[Sync] Starting at " . date('Y-m-d H:i:s') . "\n";
 
 // ── Load .env ──
@@ -14,15 +13,12 @@ if (file_exists($envFile)) {
     echo "[Sync] .env has " . count($lines) . " lines\n";
     foreach ($lines as $line) {
         if (strpos($line, '=') !== false && strpos($line, '#') !== 0) {
-            // Strip quotes from value
-            $line = trim($line);
-            $line = trim($line, '"\'');
-            putenv($line);
             list($key, $value) = explode('=', $line, 2);
-            $value = trim($value, '"\'');
+            $key = trim($key);
+            $value = trim($value, " \t\n\r\0\x0B\"'");
+            putenv("$key=$value");
             $_ENV[$key] = $value;
             $_SERVER[$key] = $value;
-            echo "[Sync] Set env: $key=" . substr($value, 0, 50) . "...\n";
         }
     }
 }
@@ -31,8 +27,8 @@ if (file_exists($envFile)) {
 $dtcUrl = getenv('DTC_DATABASE_URL');
 $mmtUrl = getenv('DATABASE_URL');
 
-echo "[Sync] DTC_DATABASE_URL: " . ($dtcUrl ? substr($dtcUrl, 0, 50) . '...' : 'MISSING') . "\n";
-echo "[Sync] DATABASE_URL: " . ($mmtUrl ? substr($mmtUrl, 0, 50) . '...' : 'MISSING') . "\n";
+echo "[Sync] DTC_DATABASE_URL: " . ($dtcUrl ? 'SET' : 'MISSING') . "\n";
+echo "[Sync] DATABASE_URL: " . ($mmtUrl ? 'SET' : 'MISSING') . "\n";
 
 if (!$dtcUrl || !$mmtUrl) {
     echo "[Sync] ERROR: Missing database URLs\n";
@@ -54,8 +50,8 @@ function parseDbUrl($url) {
 $dtc = parseDbUrl($dtcUrl);
 $mmt = parseDbUrl($mmtUrl);
 
-echo "[Sync] DTC DB: {$dtc['db']} | user={$dtc['user']} | host={$dtc['host']}\n";
-echo "[Sync] MMT DB: {$mmt['db']} | user={$mmt['user']} | host={$mmt['host']}\n";
+echo "[Sync] DTC DB: {$dtc['db']} | user={$dtc['user']}\n";
+echo "[Sync] MMT DB: {$mmt['db']} | user={$mmt['user']}\n";
 
 // ── Connect ──
 try {
@@ -72,7 +68,6 @@ try {
 }
 
 // ── Step 1: Count ALL DTC listings ──
-echo "[Sync] Checking DTC TestSwapListing table...\n";
 $countStmt = $dtcPdo->query("SELECT COUNT(*) as count FROM TestSwapListing");
 $totalCount = (int)$countStmt->fetch(PDO::FETCH_ASSOC)['count'];
 echo "[Sync] DTC has {$totalCount} TOTAL listings\n";
@@ -82,30 +77,8 @@ $activeStmt = $dtcPdo->query("SELECT COUNT(*) as count FROM TestSwapListing WHER
 $activeCount = (int)$activeStmt->fetch(PDO::FETCH_ASSOC)['count'];
 echo "[Sync] DTC has {$activeCount} ACTIVE listings\n";
 
-// ── Step 3: Count non-expired ACTIVE listings ──
-$validStmt = $dtcPdo->query("SELECT COUNT(*) as count FROM TestSwapListing WHERE status = 'ACTIVE' AND expiresAt > NOW()");
-$validCount = (int)$validStmt->fetch(PDO::FETCH_ASSOC)['count'];
-echo "[Sync] DTC has {$validCount} ACTIVE+VALID listings\n";
-
-// ── Step 4: Show sample listings ──
-if ($validCount > 0) {
-    $sample = $dtcPdo->query("SELECT id, status, expiresAt FROM TestSwapListing WHERE status = 'ACTIVE' LIMIT 3");
-    $rows = $sample->fetchAll(PDO::FETCH_ASSOC);
-    echo "[Sync] Sample listings:\n";
-    foreach ($rows as $row) {
-        echo "  - {$row['id']} | status={$row['status']} | expires={$row['expiresAt']}\n";
-    }
-}
-
-// ── Step 5: Check MMT existing shadows ──
-$shadowStmt = $mmtPdo->query("SELECT COUNT(*) as count FROM Listing WHERE source = 'DTC'");
-$shadowCount = (int)$shadowStmt->fetch(PDO::FETCH_ASSOC)['count'];
-echo "[Sync] MMT has {$shadowCount} DTC shadow listings\n";
-
-// ── Step 6: Fetch and sync ──
-echo "[Sync] Fetching DTC listings...\n";
+// ── Step 3: Fetch and sync ──
 $stmt = $dtcPdo->query("SELECT id, currentCentreId, originalCentreId, currentDateTime, testType, hasRemainingChange, desiredDateFrom, desiredDateTo, desiredTimePreference, desiredCentreIds, desiredDirection, status, jurisdiction, expiresAt, createdAt FROM TestSwapListing WHERE status = 'ACTIVE' AND expiresAt > NOW() LIMIT 500");
-
 $listings = $stmt->fetchAll(PDO::FETCH_ASSOC);
 echo "[Sync] Fetched " . count($listings) . " listings to sync\n";
 
@@ -114,7 +87,7 @@ if (count($listings) === 0) {
     exit(0);
 }
 
-// ── Step 7: Get existing MMT shadows ──
+// ── Step 4: Get existing MMT shadows ──
 $existingStmt = $mmtPdo->query("SELECT dtcListingId FROM Listing WHERE source = 'DTC'");
 $existingIds = [];
 while ($row = $existingStmt->fetch(PDO::FETCH_ASSOC)) {
@@ -122,7 +95,7 @@ while ($row = $existingStmt->fetch(PDO::FETCH_ASSOC)) {
 }
 echo "[Sync] Found " . count($existingIds) . " existing shadows in MMT\n";
 
-// ── Step 8: Sync ──
+// ── Step 5: Sync ──
 $synced = 0;
 $errors = 0;
 
@@ -149,11 +122,9 @@ foreach ($listings as $row) {
         if (isset($existingIds[$row['id']])) {
             $mmtPdo->prepare("UPDATE Listing SET currentCentreId = ?, originalCentreId = ?, currentDateTime = ?, testType = ?, hasRemainingChange = ?, desiredDateFrom = ?, desiredDateTo = ?, desiredTimePreference = ?, desiredCentreIds = ?, desiredDirection = ?, status = ?, jurisdiction = ?, expiresAt = ?, updatedAt = NOW() WHERE dtcListingId = ? AND source = 'DTC'")
                 ->execute([$data[1], $data[2], $data[3], $data[4], $data[5], $data[6], $data[7], $data[8], $data[9], $data[10], $data[11], $data[12], $data[13], $data[0]]);
-            echo "[Sync] Updated {$row['id']}\n";
         } else {
             $mmtPdo->prepare("INSERT INTO Listing (id, source, dtcListingId, accountId, currentCentreId, originalCentreId, currentDateTime, testType, hasRemainingChange, desiredDateFrom, desiredDateTo, desiredTimePreference, desiredCentreIds, desiredDirection, status, jurisdiction, expiresAt, createdAt, updatedAt) VALUES (UUID(), 'DTC', ?, NULL, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())")
                 ->execute($data);
-            echo "[Sync] Inserted {$row['id']}\n";
         }
         $synced++;
     } catch (PDOException $e) {
@@ -162,7 +133,7 @@ foreach ($listings as $row) {
     }
 }
 
-// ── Step 9: Withdraw stale ──
+// ── Step 6: Withdraw stale ──
 $currentIds = array_flip(array_column($listings, 'id'));
 $withdrawnIds = array_diff(array_keys($existingIds), array_keys($currentIds));
 if (count($withdrawnIds) > 0) {
