@@ -80,7 +80,7 @@ export function CentrePicker({
 
   return (
     <div ref={containerRef} className="relative">
-      <input type="hidden" name={name} value={selectedId} />
+      <input type="hidden" name={name} value={selectedId} required={required} />
       <input
         type="text"
         value={query}
@@ -94,7 +94,6 @@ export function CentrePicker({
           }
         }}
         placeholder={selectedLabel || placeholder}
-        required={required}
         autoComplete="off"
         className="w-full rounded-xl border border-slate-300 bg-white px-3 py-3 text-sm"
       />

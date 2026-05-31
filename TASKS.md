@@ -5,14 +5,19 @@
 - [x] Webhook API specification (WEBHOOK_SPEC.md)
 - [x] Webhook library (HMAC signing, verification, retries)
 - [x] MMT → DTC webhook sender (match.proposed, accepted, cancelled, completed)
-- [x] DTC webhook receiver endpoint (/api/webhooks/mmt)
-- [x] MMT webhook receiver endpoint (/api/webhooks/dtc)
-- [ ] Update MMT matching engine to send webhooks (IN PROGRESS)
-- [ ] Add dtcMatchId field to MMT Match model
-- [ ] Test webhook end-to-end
-- [ ] Add webhook environment variables to Hostinger
-- [ ] Hostinger cron job setup for 5-minute sync
+- [x] MMT webhook receiver endpoint (/api/webhooks/dtc) ✅ Working 2026-05-31
+- [x] DTC webhook receiver endpoint (/api/webhooks/mmt) ✅ Working 2026-05-31
+- [x] Update MMT matching engine to send webhooks (triggers on DTC listing match)
+- [x] Add dtcMatchId field to MMT Match model (schema updated, migration SQL created)
+- [x] Build passes with webhook routes included
+- [x] Fix webhook URL to thedtc.co.uk ✅ Fixed 2026-05-31
+- [x] Fix DTC webhook receiver to match DTC schema ✅ Fixed 2026-05-31
+- [x] DTC database migration completed ✅ Fixed 2026-05-31 09:10
+  - Added missing `theirTestType` column
+  - DTC dashboard now working
+- [ ] Test end-to-end webhook flow (create match, verify webhook fires)
 - [ ] Verify DTC Network badge displays correctly on matches
+- [ ] Monitor webhook logs for any errors
 
 ## Done
 - [x] Phase 1: Shadow sync table (source, dtcListingId columns)
@@ -21,27 +26,43 @@
 - [x] Production sync script (PHP for Hostinger)
 - [x] Database credentials configured for bidirectional access
 - [x] Webhook infrastructure (signing, verification, retry logic)
+- [x] Webhook routes built and included in production build
+- [x] DTC schema updated with cross-platform fields
+- [x] DTC database migration applied successfully
+- [x] DTC dashboard working (added missing `theirTestType` column)
 
 ## Next Steps
-1. Add `dtcMatchId` field to MMT Match model for cross-reference
-2. Deploy webhook endpoints to production
-3. Configure environment variables:
-   - DTC_WEBHOOK_URL=https://dtc.co.uk/api/webhooks/mmt
-   - DTC_WEBHOOK_SECRET=shared_secret_32chars
-   - MMT_WEBHOOK_URL=https://movemytest.co.uk/api/webhooks/dtc
-   - MMT_WEBHOOK_SECRET=shared_secret_32chars
-4. Test match creation triggers webhook
-5. Set up cron job (*/5 * * * *)
-6. Monitor webhook logs for errors
+1. Test end-to-end webhook flow:
+   - Create MMT listing that matches with DTC listing
+   - Check server logs for webhook delivery
+   - Verify DTC creates shadow match
+2. Check MMT server logs: `tail -f /home/u385361430/logs/webhook.log`
+3. Check DTC server logs: `tail -f /home/u385361430/logs/webhook.log`
+4. Verify webhook delivery in browser console or server logs
 
 ## Webhook Implementation Summary
 
-### Files Created
-- `src/lib/webhook.ts` — Shared webhook utilities (sign, verify, send, retry)
-- `src/features/movemytest/webhooks.ts` — MMT → DTC webhook notifications
-- `src/app/api/webhooks/mmt/route.ts` — DTC receives webhooks from MMT
-- `src/app/api/webhooks/dtc/route.ts` — MMT receives webhooks from DTC
-- `WEBHOOK_SPEC.md` — Full API specification
+### Status: ✅ BOTH APIs WORKING (2026-05-31 08:51 GMT+1)
+- DTC Dashboard: ✅ Working (fixed missing column)
+- DTC Webhook Receiver: ✅ Working
+- MMT Webhook Receiver: ✅ Working
+
+### Endpoints
+- **MMT sends to DTC**: `POST https://www.thedtc.co.uk/api/webhooks/mmt`
+- **DTC sends to MMT**: `POST https://movemytest.co.uk/api/webhooks/dtc`
+
+### Environment Variables
+**MoveMyTest:**
+```env
+DTC_WEBHOOK_URL=https://www.thedtc.co.uk/api/webhooks/mmt
+DTC_WEBHOOK_SECRET=***
+```
+
+**DTC:**
+```env
+MMT_WEBHOOK_URL=https://movemytest.co.uk/api/webhooks/dtc
+MMT_WEBHOOK_SECRET=***
+```
 
 ### How It Works
 1. MMT user creates listing → matching engine runs
@@ -51,4 +72,9 @@
 5. DTC user sees match in their DTC dashboard
 6. DTC user accepts → DTC sends `match.accepted` webhook to MMT
 7. MMT updates match status
-8. Both platforms stay in sync via webhooks
+
+### Console Errors (Non-Critical)
+- `ERR_CERT_AUTHORITY_INVALID` on MMT dashboard pages — SSL/network security issue
+- These are NOT webhook errors
+- Webhooks fire server-to-server, not through browser
+- Check server logs for actual webhook delivery status

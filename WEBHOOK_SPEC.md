@@ -81,7 +81,7 @@ Sent in header: `X-Webhook-Signature: sha256=<hex>`
 
 ### MMT sends to DTC
 ```
-POST https://dtc.co.uk/api/webhooks/mmt
+POST https://www.thedtc.co.uk/api/webhooks/mmt
 ```
 
 ### DTC sends to MMT
@@ -126,7 +126,7 @@ POST https://movemytest.co.uk/api/webhooks/dtc
 
 ### MMT
 ```
-DTC_WEBHOOK_URL=https://dtc.co.uk/api/webhooks/mmt
+DTC_WEBHOOK_URL=https://www.thedtc.co.uk/api/webhooks/mmt
 DTC_WEBHOOK_SECRET=whsec_dtc_shared_secret_32chars
 WEBHOOK_MAX_RETRIES=5
 ```

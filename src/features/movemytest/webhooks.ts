@@ -1,7 +1,7 @@
 import { sendWebhook, generateWebhookId, isWebhookTimestampValid } from "@/lib/webhook";
 import type { MatchListing } from "./matching";
 
-const DTC_WEBHOOK_URL = process.env.DTC_WEBHOOK_URL;
+const DTC_WEBHOOK_URL = process.env.DTC_WEBHOOK_URL || "https://www.thedtc.co.uk/api/webhooks/mmt";
 const DTC_WEBHOOK_SECRET = process.env.DTC_WEBHOOK_SECRET;
 
 /**
