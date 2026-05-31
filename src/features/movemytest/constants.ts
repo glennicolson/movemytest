@@ -1,4 +1,4 @@
-export const TEST_SWAP_BASE_PATH = "/";
+export const TEST_SWAP_BASE_PATH = "";
 export const DVSA_SWAP_PHONE = "0300 200 1122";
 export const DVSA_LOCATION_RULE_START = new Date("2026-06-09T00:00:00.000Z");
 export const BOOKING_REFERENCE_TTL_MINUTES = 60;
