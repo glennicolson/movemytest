@@ -29,6 +29,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
   return (
     <html lang="en-GB" spellCheck>
       <head>
+        <meta name="google-site-verification" content="wMUbDQPZPJ3qknNTL4j1RrPaqf_F9u1e_vU0zFxndpE" />
         {/* ── Typekit Fonts ── */}
         <link rel="stylesheet" href="https://use.typekit.net/esr4yrd.css" />
         <link rel="preconnect" href="https://use.typekit.net" />
