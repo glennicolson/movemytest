@@ -10,13 +10,16 @@ const DTC_WEBHOOK_SECRET = process.env.DTC_WEBHOOK_SECRET;
 export async function notifyDtcOfMatchProposed(
   mmtMatchId: string,
   mmtListing: MatchListing,
-  dtcListing: MatchListing,
+  dtcListing: MatchListing & { dtcListingId?: string | null },
   score: number
 ): Promise<{ success: boolean; error?: string }> {
   if (!DTC_WEBHOOK_URL || !DTC_WEBHOOK_SECRET) {
     console.log("[Webhook] DTC webhook not configured, skipping notification");
     return { success: false, error: "DTC webhook not configured" };
   }
+
+  // Use the actual DTC listing ID if available, otherwise fall back to MMT shadow ID
+  const dtcListingId = dtcListing.dtcListingId || dtcListing.id;
 
   const payload = {
     event: "match.proposed" as const,
@@ -27,7 +30,7 @@ export async function notifyDtcOfMatchProposed(
       sourcePlatform: "MMT",
       targetPlatform: "DTC",
       sourceListingId: mmtListing.id,
-      targetListingId: dtcListing.id,
+      targetListingId: dtcListingId,
       score,
       proposedAt: new Date().toISOString(),
       expiresAt: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
@@ -43,7 +46,7 @@ export async function notifyDtcOfMatchProposed(
       },
       targetUser: {
         platform: "DTC",
-        listingId: dtcListing.id,
+        listingId: dtcListingId,
         testCentre: dtcListing.currentCentreId,
         testDate: dtcListing.currentDateTime.toISOString(),
         testType: dtcListing.testType,

@@ -36,7 +36,9 @@ export async function GET() {
         status: true,
         score: true,
         dtcMatchId: true,
-        createdAt: true
+        createdAt: true,
+        listingA: { select: { source: true } },
+        listingB: { select: { source: true } }
       },
       orderBy: { createdAt: "desc" },
       take: 5
