@@ -203,7 +203,7 @@ export async function runMatchingForListing(listingId: string) {
       });
       if (existing) continue;
 
-      await prisma.match.create({
+      const newMatch = await prisma.match.create({
         data: {
           listingAId: listing.id,
           listingBId: candidate.id,
@@ -213,6 +213,20 @@ export async function runMatchingForListing(listingId: string) {
           expiresAt: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000), // 14 day expiry
         },
       });
+
+      // Send webhook to DTC if matching with DTC listing
+      if (candidate.source === "DTC") {
+        const { notifyDtcOfMatchProposed } = await import("./webhooks");
+        await notifyDtcOfMatchProposed(
+          newMatch.id,
+          myListing,
+          candidateListing,
+          evaluation.score
+        ).catch(err => {
+          console.error("[Matching] Failed to notify DTC of match:", err);
+          // Don't throw — match is still valid even if webhook fails
+        });
+      }
     }
   }
 }

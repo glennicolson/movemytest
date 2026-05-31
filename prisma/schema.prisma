@@ -334,6 +334,7 @@ model Match {
   score                               Int                              @default(0)
   qualitySummary                      String?                          @db.Text
   ineligibleReasons                   Json?
+  dtcMatchId                          String?                          // Cross-reference to DTC TestSwapMatch
   learnerAAcceptedAt                  DateTime?
   learnerBAcceptedAt                  DateTime?
   bothAcceptedAt                      DateTime?
@@ -366,6 +367,7 @@ model Match {
   @@unique([listingAId, listingBId])
   @@index([status])
   @@index([expiresAt])
+  @@index([dtcMatchId])
 }
 
 // ── Match Event ──
