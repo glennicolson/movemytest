@@ -52,7 +52,17 @@ export function middleware(request: NextRequest) {
     return response;
   }
 
-  return NextResponse.next();
+  const response = NextResponse.next();
+
+  // Prevent stale JS/CSS cache after deployments
+  // These headers ensure browsers fetch fresh assets after each build
+  if (request.nextUrl.pathname.startsWith("/_next/static/")) {
+    response.headers.set("Cache-Control", "public, max-age=31536000, immutable");
+  } else if (request.nextUrl.pathname.match(/\.(js|css|json)$/)) {
+    response.headers.set("Cache-Control", "public, max-age=3600, must-revalidate");
+  }
+
+  return response;
 }
 
 export const config = {
