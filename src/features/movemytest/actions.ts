@@ -89,6 +89,19 @@ async function createPotentialMatchesForListing(listingId: string) {
     if (newMatch) {
       await scheduleMatchProposedEmails(newMatch.id);
       await sendQueuedMoveMyTestEmailsAction(newMatch.id);
+      
+      // Send webhook to DTC if matching with DTC listing
+      if (candidate.source === "DTC") {
+        const { notifyDtcOfMatchProposed } = await import("./webhooks");
+        await notifyDtcOfMatchProposed(
+          newMatch.id,
+          a,
+          b,
+          evaluation.score
+        ).catch(err => {
+          console.error("[Matching] Failed to notify DTC of match:", err);
+        });
+      }
     }
   }
 }
