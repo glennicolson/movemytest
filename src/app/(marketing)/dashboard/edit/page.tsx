@@ -85,7 +85,7 @@ export default async function MoveMyTestLearnerEditPage({
 
   const referenceCentreId = listing.originalCentreId ?? listing.currentCentreId;
   const nearest = await getNearestCentres(referenceCentreId, 10);
-  const nearestCentres = nearest.map((n) => n.neighbour);
+  const nearestCentres = nearest.map((n) => n);
 
   const allCentres = await prisma.testCentre.findMany({
     orderBy: [{ name: "asc" }],
