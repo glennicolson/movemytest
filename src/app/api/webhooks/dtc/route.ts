@@ -347,9 +347,15 @@ async function handleMatchAccepted(data: any) {
         select: { id: true },
       });
       if (mappedListings.length >= 2) {
-        const ids = mappedListings.map((l) => l.id).sort();
+        const ids = mappedListings.map((l) => l.id);
         match = await prisma.match.findFirst({
-          where: { listingAId: ids[0], listingBId: ids[1], archivedAt: null },
+          where: {
+            archivedAt: null,
+            OR: [
+              { listingAId: ids[0], listingBId: ids[1] },
+              { listingAId: ids[1], listingBId: ids[0] },
+            ],
+          },
         });
       }
       if (match) {
@@ -368,25 +374,48 @@ async function handleMatchAccepted(data: any) {
       );
     }
 
+    const matchWithListings = await prisma.match.findUnique({
+      where: { id: match.id },
+      include: {
+        listingA: { select: { id: true, source: true, dtcListingId: true } },
+        listingB: { select: { id: true, source: true, dtcListingId: true } },
+      },
+    });
+
+    if (!matchWithListings) {
+      return NextResponse.json(
+        { error: "Match not found" },
+        { status: 404 }
+      );
+    }
+
+    const isDtcListing = (listing: { source: string; dtcListingId: string | null }) =>
+      listing.source === "DTC" || Boolean(listing.dtcListingId);
+    const acceptedSide =
+      acceptedBy === "DTC"
+        ? isDtcListing(matchWithListings.listingA)
+          ? "A"
+          : "B"
+        : isDtcListing(matchWithListings.listingA)
+          ? "B"
+          : "A";
+
     const updateData: any = {};
-    if (acceptedBy === "DTC") {
-      // DTC user accepted, update MMT side
-      updateData.learnerBAcceptedAt = new Date();
-      // If MMT already accepted, mark both accepted
-      if (match.learnerAAcceptedAt) {
-        updateData.bothAcceptedAt = new Date();
-        updateData.status = "CALLER_PENDING";
-      } else {
-        updateData.status = "LEARNER_B_ACCEPTED";
-      }
-    } else {
-      // MMT user accepted (echo back from DTC)
+    if (acceptedSide === "A") {
       updateData.learnerAAcceptedAt = new Date();
-      if (match.learnerBAcceptedAt) {
+      if (matchWithListings.learnerBAcceptedAt) {
         updateData.bothAcceptedAt = new Date();
         updateData.status = "CALLER_PENDING";
       } else {
         updateData.status = "LEARNER_A_ACCEPTED";
+      }
+    } else {
+      updateData.learnerBAcceptedAt = new Date();
+      if (matchWithListings.learnerAAcceptedAt) {
+        updateData.bothAcceptedAt = new Date();
+        updateData.status = "CALLER_PENDING";
+      } else {
+        updateData.status = "LEARNER_B_ACCEPTED";
       }
     }
 
@@ -394,6 +423,8 @@ async function handleMatchAccepted(data: any) {
       where: { id: match.id },
       data: updateData,
     });
+
+    console.log(`[Webhook] Updated match ${match.id} status to ${updateData.status || "ACCEPTED"} (accepted side ${acceptedSide})`);
 
     return NextResponse.json({ received: true, status: "updated" });
   } catch (error) {

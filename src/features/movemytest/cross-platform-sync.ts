@@ -28,7 +28,7 @@ interface ListingSyncPayload {
 
 interface AcceptanceSyncPayload {
   matchId: string;
-  dtcMatchId: string;
+  dtcMatchId: string | null;
   acceptedBy: "MMT";
   listingOwnerId: string;
   listingAId: string;
@@ -86,7 +86,7 @@ export async function pushAcceptanceToDTC(payload: AcceptanceSyncPayload): Promi
   }
 
   try {
-    await fetch(DTC_WEBHOOK_URL, {
+    const response = await fetch(DTC_WEBHOOK_URL, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -99,7 +99,12 @@ export async function pushAcceptanceToDTC(payload: AcceptanceSyncPayload): Promi
         data: payload,
       }),
     });
-    console.log(`[MMTCrossSync] Acceptance for MMT match ${payload.matchId} pushed to DTC`);
+    if (response.ok) {
+      console.log(`[MMTCrossSync] Acceptance for MMT match ${payload.matchId} pushed to DTC (${response.status})`);
+    } else {
+      const errBody = await response.text().catch(() => "");
+      console.error(`[MMTCrossSync] DTC rejected acceptance push for match ${payload.matchId}: HTTP ${response.status} — ${errBody.slice(0, 200)}`);
+    }
   } catch (error) {
     console.error(`[MMTCrossSync] Error pushing acceptance to DTC: ${String(error)}`);
   }

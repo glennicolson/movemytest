@@ -96,7 +96,7 @@ export async function createPotentialMatchesForListing(listingId: string) {
         await notifyDtcOfMatchProposed(
           newMatch.id,
           a,
-          b,
+          { ...b, dtcListingId: candidate.dtcListingId },
           evaluation.score
         ).catch(err => {
           console.error("[Matching] Failed to notify DTC of match:", err);
