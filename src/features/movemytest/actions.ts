@@ -347,6 +347,8 @@ export async function acceptMoveMyTestMatchAction(formData: FormData) {
             dtcMatchId: m.dtcMatchId,
             acceptedBy: "MMT" as const,
             listingOwnerId: otherListing.dtcListingId || otherListing.id,
+            listingAId: m.listingAId,
+            listingBId: m.listingBId,
           });
         }
       }).catch(() => {});

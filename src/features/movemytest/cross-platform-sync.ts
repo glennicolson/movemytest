@@ -31,6 +31,8 @@ interface AcceptanceSyncPayload {
   dtcMatchId: string;
   acceptedBy: "MMT";
   listingOwnerId: string;
+  listingAId: string;
+  listingBId: string;
 }
 
 /**

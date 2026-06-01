@@ -322,12 +322,27 @@ async function handleMatchProposed(data: any) {
  * Handle match.accepted from DTC
  */
 async function handleMatchAccepted(data: any) {
-  const { matchId: dtcMatchId, acceptedBy } = data;
+  const { matchId: dtcMatchId, acceptedBy, listingAId, listingBId } = data;
 
   try {
-    const match = await prisma.match.findFirst({
+    // Try finding by dtcMatchId first, then fall back to listing ID pair
+    let match = await prisma.match.findFirst({
       where: { dtcMatchId },
     });
+
+    if (!match && listingAId && listingBId) {
+      const [first, second] = [listingAId, listingBId].sort();
+      match = await prisma.match.findFirst({
+        where: { listingAId: first, listingBId: second, archivedAt: null },
+      });
+      if (match) {
+        // Store dtcMatchId for future reference
+        await prisma.match.update({
+          where: { id: match.id },
+          data: { dtcMatchId },
+        });
+      }
+    }
 
     if (!match) {
       return NextResponse.json(
