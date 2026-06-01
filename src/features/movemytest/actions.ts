@@ -342,13 +342,18 @@ export async function acceptMoveMyTestMatchAction(formData: FormData) {
       }).then((listings) => {
         const otherListing = listings.find((l) => l.source === "DTC" || l.dtcListingId);
         if (otherListing) {
+          // Map MMT listing IDs to DTC listing IDs for the acceptance payload
+          const listingA = listings.find((l) => l.id === m.listingAId);
+          const listingB = listings.find((l) => l.id === m.listingBId);
+          const dtcListingAId = listingA?.dtcListingId || (listingA?.source === "DTC" ? listingA.id : null) || m.listingAId;
+          const dtcListingBId = listingB?.dtcListingId || (listingB?.source === "DTC" ? listingB.id : null) || m.listingBId;
           pushAcceptanceToDTC({
             matchId: result.matchId!,
             dtcMatchId: m.dtcMatchId,
             acceptedBy: "MMT" as const,
             listingOwnerId: otherListing.dtcListingId || otherListing.id,
-            listingAId: m.listingAId,
-            listingBId: m.listingBId,
+            listingAId: dtcListingAId,
+            listingBId: dtcListingBId,
           });
         }
       }).catch(() => {});
