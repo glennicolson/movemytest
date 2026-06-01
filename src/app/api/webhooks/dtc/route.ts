@@ -384,6 +384,8 @@ async function handleMatchAccepted(data: any) {
       if (match.learnerBAcceptedAt) {
         updateData.bothAcceptedAt = new Date();
         updateData.status = "CALLER_PENDING";
+      } else {
+        updateData.status = "LEARNER_A_ACCEPTED";
       }
     }
 
