@@ -323,6 +323,7 @@ async function handleMatchProposed(data: any) {
  */
 async function handleMatchAccepted(data: any) {
   const { matchId: dtcMatchId, acceptedBy, listingAId, listingBId } = data;
+  console.log(`[Webhook] Processing match.accepted from DTC: dtcMatchId=${dtcMatchId}, acceptedBy=${acceptedBy}, listingAId=${listingAId}, listingBId=${listingBId}`);
 
   try {
     // Try finding by dtcMatchId first, then fall back to listing ID pair
