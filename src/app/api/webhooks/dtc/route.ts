@@ -331,10 +331,26 @@ async function handleMatchAccepted(data: any) {
     });
 
     if (!match && listingAId && listingBId) {
-      const [first, second] = [listingAId, listingBId].sort();
-      match = await prisma.match.findFirst({
-        where: { listingAId: first, listingBId: second, archivedAt: null },
+      // Try to find the MMT-side match by listing IDs. DTC sends its own listing
+      // IDs, which may differ from MMT's. Look up MMT listings by dtcListingId
+      // to find the actual MMT listing IDs, then match by those.
+      const mappedListings = await prisma.listing.findMany({
+        where: {
+          OR: [
+            { dtcListingId: listingAId },
+            { dtcListingId: listingBId },
+            { id: listingAId },
+            { id: listingBId },
+          ],
+        },
+        select: { id: true },
       });
+      if (mappedListings.length >= 2) {
+        const ids = mappedListings.map((l) => l.id).sort();
+        match = await prisma.match.findFirst({
+          where: { listingAId: ids[0], listingBId: ids[1], archivedAt: null },
+        });
+      }
       if (match) {
         // Store dtcMatchId for future reference
         await prisma.match.update({
