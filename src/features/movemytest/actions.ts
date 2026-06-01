@@ -295,20 +295,63 @@ export async function deleteMoveMyTestListingAction(formData: FormData) {
 export async function acceptMoveMyTestMatchAction(formData: FormData) {
   const session = await requireMoveMyTestSession();
   const matchId = String(formData.get("matchId") ?? "");
-  const match = await prisma.match.findFirst({
-    where: { id: matchId, OR: [{ listingA: { accountId: session.accountId } }, { listingB: { accountId: session.accountId } }] },
-    include: { listingA: true, listingB: true },
+
+  // Use transaction to prevent race conditions
+  const result = await prisma.$transaction(async (tx) => {
+    const match = await tx.match.findFirst({
+      where: { id: matchId, OR: [{ listingA: { accountId: session.accountId } }, { listingB: { accountId: session.accountId } }] },
+      include: { listingA: true, listingB: true },
+    });
+    if (!match) return { success: false, matchId: null };
+
+    const isA = match.listingA.accountId === session.accountId;
+
+    // Don't regress already-accepted matches
+    if (match.learnerAAcceptedAt && match.learnerBAcceptedAt && match.status === "CALLER_PENDING") {
+      return { success: true, alreadyAccepted: true, status: match.status, matchId: match.id };
+    }
+
+    const data = isA ? { learnerAAcceptedAt: new Date() } : { learnerBAcceptedAt: new Date() };
+    const bothAccepted = (isA ? new Date() : match.learnerAAcceptedAt) && (!isA ? new Date() : match.learnerBAcceptedAt);
+    const newStatus = bothAccepted ? "CALLER_PENDING" : isA ? "LEARNER_A_ACCEPTED" : "LEARNER_B_ACCEPTED";
+
+    await tx.match.update({
+      where: { id: match.id },
+      data: { ...data, status: newStatus, bothAcceptedAt: bothAccepted ? new Date() : null },
+    });
+
+    await tx.matchEvent.create({ data: { matchId: match.id, accountId: session.accountId, eventType: "MATCH_ACCEPTED" } });
+
+    return { success: true, alreadyAccepted: false, status: newStatus, matchId: match.id };
   });
-  if (!match) return;
-  const isA = match.listingA.accountId === session.accountId;
-  const data = isA ? { learnerAAcceptedAt: new Date() } : { learnerBAcceptedAt: new Date() };
-  const bothAccepted = (isA ? new Date() : match.learnerAAcceptedAt) && (!isA ? new Date() : match.learnerBAcceptedAt);
-  await prisma.match.update({
-    where: { id: match.id },
-    data: { ...data, status: bothAccepted ? "CALLER_PENDING" : isA ? "LEARNER_A_ACCEPTED" : "LEARNER_B_ACCEPTED", bothAcceptedAt: bothAccepted ? new Date() : null },
+
+  if (!result.success || !result.matchId) return;
+
+  revalidatePath(`${TEST_SWAP_BASE_PATH}/matches/${result.matchId}`);
+
+  // Push acceptance to DTC if the other listing is cross-platform
+  import("./cross-platform-sync").then(({ pushAcceptanceToDTC }) => {
+    prisma.match.findUnique({
+      where: { id: result.matchId! },
+      select: { listingAId: true, listingBId: true, dtcMatchId: true },
+    }).then((m) => {
+      if (!m) return;
+      prisma.listing.findMany({
+        where: { id: { in: [m.listingAId, m.listingBId] } },
+        select: { id: true, source: true, dtcListingId: true },
+      }).then((listings) => {
+        const otherListing = listings.find((l) => l.source === "DTC" || l.dtcListingId);
+        if (otherListing) {
+          pushAcceptanceToDTC({
+            matchId: result.matchId!,
+            dtcMatchId: m.dtcMatchId,
+            acceptedBy: "MMT" as const,
+            listingOwnerId: otherListing.dtcListingId || otherListing.id,
+          });
+        }
+      }).catch(() => {});
+    }).catch(() => {});
   });
-  await prisma.matchEvent.create({ data: { matchId: match.id, accountId: session.accountId, eventType: "MATCH_ACCEPTED" } });
-  revalidatePath(`${TEST_SWAP_BASE_PATH}/matches/${match.id}`);
 }
 
 export async function revealBookingReferenceAction(_: MoveMyTestActionState, formData: FormData): Promise<MoveMyTestActionState> {

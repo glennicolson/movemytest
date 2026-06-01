@@ -26,6 +26,13 @@ interface ListingSyncPayload {
   expiresAt: string;
 }
 
+interface AcceptanceSyncPayload {
+  matchId: string;
+  dtcMatchId: string;
+  acceptedBy: "MMT";
+  listingOwnerId: string;
+}
+
 /**
  * Push an MMT listing to DTC as a shadow record.
  * Called after create/update/delete actions on MMT Listing.
@@ -63,5 +70,35 @@ export async function pushListingToDTC(payload: ListingSyncPayload): Promise<{ s
     const err = error instanceof Error ? error.message : String(error);
     console.error(`[MMTCrossSync] Error syncing listing ${payload.mmtListingId}: ${err}`);
     return { success: false, error: err };
+  }
+}
+
+/**
+ * Push MMT match acceptance to DTC.
+ * Called when an MMT user accepts a match that involves a DTC listing.
+ */
+export async function pushAcceptanceToDTC(payload: AcceptanceSyncPayload): Promise<void> {
+  if (!DTC_WEBHOOK_URL || !INTERNAL_API_KEY) {
+    console.log("[MMTCrossSync] DTC webhook or API key not configured, skipping acceptance sync");
+    return;
+  }
+
+  try {
+    await fetch(DTC_WEBHOOK_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-API-Key": INTERNAL_API_KEY,
+      },
+      body: JSON.stringify({
+        event: "match.accepted",
+        webhookId: `mmt_accept_${payload.matchId}_${Date.now()}`,
+        timestamp: new Date().toISOString(),
+        data: payload,
+      }),
+    });
+    console.log(`[MMTCrossSync] Acceptance for MMT match ${payload.matchId} pushed to DTC`);
+  } catch (error) {
+    console.error(`[MMTCrossSync] Error pushing acceptance to DTC: ${String(error)}`);
   }
 }

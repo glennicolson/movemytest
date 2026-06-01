@@ -343,16 +343,16 @@ async function handleMatchAccepted(data: any) {
       // If MMT already accepted, mark both accepted
       if (match.learnerAAcceptedAt) {
         updateData.bothAcceptedAt = new Date();
-        updateData.status = "BOTH_ACCEPTED";
+        updateData.status = "CALLER_PENDING";
       } else {
-        updateData.status = "ACCEPTED";
+        updateData.status = "LEARNER_B_ACCEPTED";
       }
     } else {
       // MMT user accepted (echo back from DTC)
       updateData.learnerAAcceptedAt = new Date();
       if (match.learnerBAcceptedAt) {
         updateData.bothAcceptedAt = new Date();
-        updateData.status = "BOTH_ACCEPTED";
+        updateData.status = "CALLER_PENDING";
       }
     }
 
