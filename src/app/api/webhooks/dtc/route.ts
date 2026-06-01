@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyWebhookSignature, isWebhookTimestampValid } from "@/lib/webhook";
+import { validateApiKey } from "@/lib/api-key";
 import { prisma } from "@/lib/db/prisma";
 
 const DTC_WEBHOOK_SECRET = process.env.DTC_WEBHOOK_SECRET;
@@ -12,6 +13,18 @@ const DTC_WEBHOOK_SECRET = process.env.DTC_WEBHOOK_SECRET;
  */
 export async function POST(request: NextRequest) {
   try {
+    // Parse payload first (needed for both auth methods)
+    const payload = await request.json();
+    const event = request.headers.get("x-webhook-event") || payload.event;
+
+    // Check for internal API key auth (used for listing sync from DTC)
+    const apiKey = request.headers.get("X-API-Key");
+    if (apiKey && validateApiKey(request)) {
+      console.log(`[Webhook] Internal API key auth for ${event}`);
+      // Process based on event type
+      return handleWebhookEvent(event, payload.data || payload);
+    }
+
     // Verify secret is configured
     if (!DTC_WEBHOOK_SECRET) {
       console.error("[Webhook] DTC_WEBHOOK_SECRET not configured");
@@ -24,7 +37,6 @@ export async function POST(request: NextRequest) {
     // Get signature from header
     const signature = request.headers.get("x-webhook-signature")?.replace("sha256=", "");
     const webhookId = request.headers.get("x-webhook-id");
-    const event = request.headers.get("x-webhook-event");
     const timestamp = request.headers.get("x-webhook-timestamp");
 
     if (!signature || !webhookId || !event || !timestamp) {
@@ -33,9 +45,6 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
-
-    // Parse payload
-    const payload = await request.json();
 
     // Verify timestamp (prevent replay attacks)
     if (!isWebhookTimestampValid(timestamp)) {
@@ -92,6 +101,32 @@ export async function POST(request: NextRequest) {
       { error: "Internal server error" },
       { status: 500 }
     );
+  }
+}
+
+/**
+ * Route webhook events to appropriate handlers
+ */
+async function handleWebhookEvent(event: string, data: any) {
+  switch (event) {
+    case "listing.synced":
+      return handleListingSynced(data);
+    case "match.proposed":
+      return handleMatchProposed(data);
+    case "match.accepted":
+      return handleMatchAccepted(data);
+    case "match.booking_reference_shared":
+      return handleBookingReferenceShared(data);
+    case "match.cancelled":
+      return handleMatchCancelled(data);
+    case "match.completed":
+      return handleMatchCompleted(data);
+    default:
+      console.warn(`[Webhook] Unknown event type: ${event}`);
+      return NextResponse.json(
+        { received: true, warning: "Unknown event type" },
+        { status: 202 }
+      );
   }
 }
 
