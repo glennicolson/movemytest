@@ -52,7 +52,7 @@ async function buildCentreMap() {
   return new Map<string, MatchCentre>(centres.map((centre) => [centre.id, { id: centre.id, nearestCentreIds: [] }]));
 }
 
-async function createPotentialMatchesForListing(listingId: string) {
+export async function createPotentialMatchesForListing(listingId: string) {
   const listing = await prisma.listing.findUnique({ where: { id: listingId }, include: { currentCentre: true } });
   if (!listing || listing.status !== "ACTIVE") return;
 
@@ -219,6 +219,28 @@ export async function createMoveMyTestListingAction(_: MoveMyTestActionState, fo
   });
 
   await createPotentialMatchesForListing(listing.id);
+
+  // Push to DTC for cross-platform visibility (fire-and-forget)
+  import("./cross-platform-sync").then(({ pushListingToDTC }) => {
+    pushListingToDTC({
+      mmtListingId: listing.id,
+      action: "created",
+      currentCentreId: listing.currentCentreId,
+      originalCentreId: listing.originalCentreId,
+      currentDateTime: listing.currentDateTime.toISOString(),
+      testType: listing.testType,
+      hasRemainingChange: listing.hasRemainingChange,
+      desiredDateFrom: listing.desiredDateFrom.toISOString(),
+      desiredDateTo: listing.desiredDateTo.toISOString(),
+      desiredTimePreference: listing.desiredTimePreference,
+      desiredCentreIds: parsed.data.desiredCentreIds,
+      desiredDirection: listing.desiredDirection,
+      jurisdiction: listing.jurisdiction,
+      status: listing.status,
+      expiresAt: listing.expiresAt.toISOString(),
+    }).catch((err) => console.error("[MMTCrossSync] Background sync failed:", err));
+  });
+
   revalidatePath(`${TEST_SWAP_BASE_PATH}/dashboard`);
   redirect(`${TEST_SWAP_BASE_PATH}/dashboard/what-to-expect` as never);
 }
@@ -530,6 +552,30 @@ export async function updateMoveMyTestLearnerRecordAction(formData: FormData): P
 
 // Re-run matching with updated preferences
   await createPotentialMatchesForListing(listing.id);
+
+  // Push updated listing to DTC for cross-platform visibility (fire-and-forget)
+  // Only sync MMT-owned listings, not DTC shadow listings
+  if (listing.source !== "DTC") {
+    import("./cross-platform-sync").then(({ pushListingToDTC }) => {
+      pushListingToDTC({
+        mmtListingId: listing.id,
+        action: "updated",
+        currentCentreId: listing.currentCentreId,
+        originalCentreId: listing.originalCentreId,
+        currentDateTime: listing.currentDateTime.toISOString(),
+        testType: listing.testType,
+        hasRemainingChange: listing.hasRemainingChange,
+        desiredDateFrom: listing.desiredDateFrom.toISOString(),
+        desiredDateTo: listing.desiredDateTo.toISOString(),
+        desiredTimePreference: listing.desiredTimePreference,
+        desiredCentreIds: parsed.data.desiredCentreIds,
+        desiredDirection: listing.desiredDirection,
+        jurisdiction: listing.jurisdiction,
+        status: listing.status,
+        expiresAt: listing.expiresAt.toISOString(),
+      }).catch((err) => console.error("[MMTCrossSync] Background update sync failed:", err));
+    });
+  }
 
   revalidatePath("/dashboard/edit");
   revalidatePath("/dashboard");

@@ -1,0 +1,67 @@
+/**
+ * Cross-platform listing sync utilities for MoveMyTest
+ *
+ * When a listing is created/updated/deleted on MMT, this pushes a shadow copy
+ * to DTC so DTC users can see and match with MMT listings.
+ */
+
+const DTC_WEBHOOK_URL = process.env.DTC_WEBHOOK_URL || "https://www.thedtc.co.uk/api/webhooks/mmt";
+const INTERNAL_API_KEY = process.env.INTERNAL_API_KEY;
+
+interface ListingSyncPayload {
+  mmtListingId: string;
+  action: "created" | "updated" | "deleted";
+  currentCentreId: string;
+  originalCentreId?: string | null;
+  currentDateTime: string;
+  testType: string;
+  hasRemainingChange: boolean;
+  desiredDateFrom: string;
+  desiredDateTo: string;
+  desiredTimePreference: string;
+  desiredCentreIds: string[];
+  desiredDirection: string;
+  jurisdiction: string;
+  status: string;
+  expiresAt: string;
+}
+
+/**
+ * Push an MMT listing to DTC as a shadow record.
+ * Called after create/update/delete actions on MMT Listing.
+ */
+export async function pushListingToDTC(payload: ListingSyncPayload): Promise<{ success: boolean; error?: string }> {
+  if (!DTC_WEBHOOK_URL || !INTERNAL_API_KEY) {
+    console.log("[MMTCrossSync] DTC webhook or API key not configured, skipping");
+    return { success: false, error: "Not configured" };
+  }
+
+  try {
+    const response = await fetch(DTC_WEBHOOK_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-API-Key": INTERNAL_API_KEY,
+      },
+      body: JSON.stringify({
+        event: "listing.synced",
+        webhookId: `mmt_sync_${payload.mmtListingId}_${Date.now()}`,
+        timestamp: new Date().toISOString(),
+        data: payload,
+      }),
+    });
+
+    if (response.ok) {
+      console.log(`[MMTCrossSync] Listing ${payload.mmtListingId} synced to DTC (${payload.action})`);
+      return { success: true };
+    }
+
+    const err = await response.json().catch(() => ({ error: `HTTP ${response.status}` }));
+    console.error(`[MMTCrossSync] Failed to sync listing ${payload.mmtListingId}: ${err.error || response.status}`);
+    return { success: false, error: err.error || `HTTP ${response.status}` };
+  } catch (error) {
+    const err = error instanceof Error ? error.message : String(error);
+    console.error(`[MMTCrossSync] Error syncing listing ${payload.mmtListingId}: ${err}`);
+    return { success: false, error: err };
+  }
+}

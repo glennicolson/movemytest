@@ -66,6 +66,8 @@ export async function POST(request: NextRequest) {
 
     // Process based on event type
     switch (event) {
+      case "listing.synced":
+        return handleListingSynced(payload.data);
       case "match.proposed":
         return handleMatchProposed(payload.data);
       case "match.accepted":
@@ -90,6 +92,102 @@ export async function POST(request: NextRequest) {
       { error: "Internal server error" },
       { status: 500 }
     );
+  }
+}
+
+/**
+ * Handle listing.synced — DTC is syncing a listing to MMT as a shadow record
+ */
+async function handleListingSynced(data: any) {
+  const { dtcListingId, action } = data;
+  console.log(`[Webhook] Processing listing.synced: dtcListingId=${dtcListingId}, action=${action}`);
+
+  try {
+    if (action === "deleted") {
+      // Mark DTC shadow listing as withdrawn in MMT
+      const result = await prisma.listing.updateMany({
+        where: { dtcListingId, source: "DTC" },
+        data: { status: "EXPIRED" },
+      });
+      console.log(`[Webhook] Withdrew DTC shadow listing ${dtcListingId}, matched ${result.count} records`);
+      return NextResponse.json({ received: true, status: "withdrawn", count: result.count });
+    }
+
+    // Create or update shadow listing from DTC data
+    const {
+      currentCentreId, originalCentreId, currentDateTime, testType,
+      hasRemainingChange, desiredDateFrom, desiredDateTo, desiredTimePreference,
+      desiredCentreIds, desiredDirection, jurisdiction, status: listingStatus, expiresAt
+    } = data;
+
+    // Validate required fields
+    if (!currentCentreId || !currentDateTime || !testType) {
+      return NextResponse.json({ error: "Missing required listing fields" }, { status: 400 });
+    }
+
+    const existing = await prisma.listing.findFirst({
+      where: { dtcListingId, source: "DTC" },
+    });
+
+    if (existing) {
+      // Update existing shadow
+      await prisma.listing.update({
+        where: { id: existing.id },
+        data: {
+          currentCentreId,
+          originalCentreId: originalCentreId || null,
+          currentDateTime: new Date(currentDateTime),
+          testType,
+          hasRemainingChange: hasRemainingChange ?? true,
+          desiredDateFrom: new Date(desiredDateFrom),
+          desiredDateTo: new Date(desiredDateTo),
+          desiredTimePreference: desiredTimePreference || "ANY",
+          desiredCentreIds: desiredCentreIds || [],
+          desiredDirection: desiredDirection || "EITHER",
+          jurisdiction: jurisdiction || "GB_DVSA",
+          status: listingStatus || "ACTIVE",
+          expiresAt: expiresAt ? new Date(expiresAt) : new Date(Date.now() + 90 * 24 * 60 * 60 * 1000),
+        },
+      });
+      console.log(`[Webhook] Updated DTC shadow listing ${dtcListingId} → MMT ${existing.id}`);
+    } else {
+      // Create new shadow
+      const created = await prisma.listing.create({
+        data: {
+          source: "DTC",
+          dtcListingId,
+          accountId: null,
+          currentCentreId,
+          originalCentreId: originalCentreId || null,
+          currentDateTime: new Date(currentDateTime),
+          testType,
+          hasRemainingChange: hasRemainingChange ?? true,
+          desiredDateFrom: new Date(desiredDateFrom),
+          desiredDateTo: new Date(desiredDateTo),
+          desiredTimePreference: desiredTimePreference || "ANY",
+          desiredCentreIds: desiredCentreIds || [],
+          desiredDirection: desiredDirection || "EITHER",
+          jurisdiction: jurisdiction || "GB_DVSA",
+          status: listingStatus || "ACTIVE",
+          expiresAt: expiresAt ? new Date(expiresAt) : new Date(Date.now() + 90 * 24 * 60 * 60 * 1000),
+        },
+      });
+      console.log(`[Webhook] Created DTC shadow listing ${dtcListingId} → MMT ${created.id}`);
+
+      // Run matching for the new shadow listing to find MMT matches
+      try {
+        const { createPotentialMatchesForListing } = await import("@/features/movemytest/actions");
+        await createPotentialMatchesForListing(created.id);
+      } catch (matchErr) {
+        console.error(`[Webhook] Matching skipped for shadow listing ${created.id}:`, matchErr);
+      }
+    }
+
+    return NextResponse.json({ received: true, status: "synced" });
+  } catch (error) {
+    const err = error instanceof Error ? error.message : String(error);
+    console.error("[Webhook] Error syncing listing:", err);
+    return NextResponse.json({ error: "Failed to sync listing" }, { status: 500 });
   }
 }
 
