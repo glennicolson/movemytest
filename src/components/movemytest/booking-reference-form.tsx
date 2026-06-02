@@ -23,12 +23,12 @@ export function BookingReferenceForm({ matchId, savedBookingReference, alreadyCo
     );
   }
 
-  const callerLabel =
+  const callerNotice =
     callerStatus === "i-am-caller"
-      ? "I will make the call to DVSA for both learners."
+      ? "You are making the DVSA call. The other learner will be ready to receive DVSA's call."
       : callerStatus === "other-is-caller"
-        ? "The other learner will make the call. DVSA will call me for security checks."
-        : "I will make the call to DVSA.";
+        ? "The other learner is making the DVSA call. DVSA will call you for security checks."
+        : null;
 
   return (
     <form action={action} className="space-y-4 rounded-2xl border border-amber-200 bg-amber-50 p-4">
@@ -55,7 +55,13 @@ export function BookingReferenceForm({ matchId, savedBookingReference, alreadyCo
         </label>
       ) : null}
       <div className="space-y-2 text-sm text-slate-700">
-        <label className="flex gap-3"><input type="checkbox" name="volunteerDvsaCaller" /> <span>{callerLabel}</span></label>
+        {callerNotice ? (
+          <p className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm font-medium text-emerald-900">
+            {callerNotice}
+          </p>
+        ) : (
+          <label className="flex gap-3"><input type="checkbox" name="volunteerDvsaCaller" /> <span>I will make the call to DVSA.</span></label>
+        )}
         <label className="flex gap-3"><input type="checkbox" name="consentReadyNow" required /> <span>Both learners are available for the DVSA phone process now.</span></label>
         <label className="flex gap-3"><input type="checkbox" name="consentSecurity" required /> <span>DVSA will complete security checks with each learner.</span></label>
         <label className="flex gap-3"><input type="checkbox" name="consentNoSensitiveSharing" required /> <span>I will never share driving licence numbers, payment card details, address, theory certificate number or GOV.UK login details.</span></label>

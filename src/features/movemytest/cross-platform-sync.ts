@@ -35,6 +35,14 @@ interface AcceptanceSyncPayload {
   listingBId: string;
 }
 
+interface CallerVolunteerSyncPayload {
+  matchId: string;
+  dtcMatchId: string | null;
+  callerPlatform: "MMT";
+  listingAId: string;
+  listingBId: string;
+}
+
 /**
  * Push an MMT listing to DTC as a shadow record.
  * Called after create/update/delete actions on MMT Listing.
@@ -107,5 +115,40 @@ export async function pushAcceptanceToDTC(payload: AcceptanceSyncPayload): Promi
     }
   } catch (error) {
     console.error(`[MMTCrossSync] Error pushing acceptance to DTC: ${String(error)}`);
+  }
+}
+
+/**
+ * Push MMT DVSA-caller volunteer state to DTC.
+ * Called when an MMT user volunteers to make the official DVSA call.
+ */
+export async function pushCallerVolunteerToDTC(payload: CallerVolunteerSyncPayload): Promise<void> {
+  if (!DTC_WEBHOOK_URL || !INTERNAL_API_KEY) {
+    console.log("[MMTCrossSync] DTC webhook or API key not configured, skipping caller sync");
+    return;
+  }
+
+  try {
+    const response = await fetch(DTC_WEBHOOK_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-API-Key": INTERNAL_API_KEY,
+      },
+      body: JSON.stringify({
+        event: "match.dvsa_caller_volunteered",
+        webhookId: `mmt_caller_${payload.matchId}_${Date.now()}`,
+        timestamp: new Date().toISOString(),
+        data: payload,
+      }),
+    });
+    if (response.ok) {
+      console.log(`[MMTCrossSync] DVSA caller for MMT match ${payload.matchId} pushed to DTC (${response.status})`);
+    } else {
+      const errBody = await response.text().catch(() => "");
+      console.error(`[MMTCrossSync] DTC rejected caller push for match ${payload.matchId}: HTTP ${response.status} — ${errBody.slice(0, 200)}`);
+    }
+  } catch (error) {
+    console.error(`[MMTCrossSync] Error pushing caller volunteer to DTC: ${String(error)}`);
   }
 }

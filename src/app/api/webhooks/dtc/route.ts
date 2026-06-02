@@ -81,6 +81,8 @@ export async function POST(request: NextRequest) {
         return handleMatchProposed(payload.data);
       case "match.accepted":
         return handleMatchAccepted(payload.data);
+      case "match.dvsa_caller_volunteered":
+        return handleDvsaCallerVolunteered(payload.data);
       case "match.booking_reference_shared":
         return handleBookingReferenceShared(payload.data);
       case "match.cancelled":
@@ -115,6 +117,8 @@ async function handleWebhookEvent(event: string, data: any) {
       return handleMatchProposed(data);
     case "match.accepted":
       return handleMatchAccepted(data);
+    case "match.dvsa_caller_volunteered":
+      return handleDvsaCallerVolunteered(data);
     case "match.booking_reference_shared":
       return handleBookingReferenceShared(data);
     case "match.cancelled":
@@ -431,6 +435,103 @@ async function handleMatchAccepted(data: any) {
     console.error("[Webhook] Error updating match:", error);
     return NextResponse.json(
       { error: "Failed to update match" },
+      { status: 500 }
+    );
+  }
+}
+
+/**
+ * Handle match.dvsa_caller_volunteered from DTC
+ */
+async function handleDvsaCallerVolunteered(data: any) {
+  const { matchId: dtcMatchId, callerPlatform, listingAId, listingBId } = data;
+  console.log(`[Webhook] Processing match.dvsa_caller_volunteered from DTC: dtcMatchId=${dtcMatchId}, callerPlatform=${callerPlatform}`);
+
+  try {
+    let match = await prisma.match.findFirst({
+      where: { dtcMatchId },
+    });
+
+    if (!match && listingAId && listingBId) {
+      const mappedListings = await prisma.listing.findMany({
+        where: {
+          OR: [
+            { dtcListingId: listingAId },
+            { dtcListingId: listingBId },
+            { id: listingAId },
+            { id: listingBId },
+          ],
+        },
+        select: { id: true },
+      });
+
+      if (mappedListings.length >= 2) {
+        const ids = mappedListings.map((listing) => listing.id);
+        match = await prisma.match.findFirst({
+          where: {
+            archivedAt: null,
+            OR: [
+              { listingAId: ids[0], listingBId: ids[1] },
+              { listingAId: ids[1], listingBId: ids[0] },
+            ],
+          },
+        });
+      }
+      if (match) {
+        await prisma.match.update({
+          where: { id: match.id },
+          data: { dtcMatchId },
+        });
+      }
+    }
+
+    if (!match) {
+      console.warn(`[Webhook] Caller volunteer match ${dtcMatchId} not found`);
+      return NextResponse.json({ error: "Match not found" }, { status: 404 });
+    }
+
+    const matchWithListings = await prisma.match.findUnique({
+      where: { id: match.id },
+      include: {
+        listingA: { select: { id: true, source: true, dtcListingId: true } },
+        listingB: { select: { id: true, source: true, dtcListingId: true } },
+      },
+    });
+
+    if (!matchWithListings) {
+      return NextResponse.json({ error: "Match not found" }, { status: 404 });
+    }
+
+    const isDtcListing = (listing: { source: string; dtcListingId: string | null }) =>
+      listing.source === "DTC" || Boolean(listing.dtcListingId);
+    const callerSide =
+      callerPlatform === "DTC"
+        ? isDtcListing(matchWithListings.listingA)
+          ? "A"
+          : "B"
+        : isDtcListing(matchWithListings.listingA)
+          ? "B"
+          : "A";
+
+    const updateData =
+      callerSide === "A"
+        ? { learnerADvsaCallerAt: matchWithListings.learnerADvsaCallerAt ?? new Date() }
+        : { learnerBDvsaCallerAt: matchWithListings.learnerBDvsaCallerAt ?? new Date() };
+
+    await prisma.match.update({
+      where: { id: match.id },
+      data: {
+        ...updateData,
+        status: match.status === "CALLER_PENDING" ? "BOOKING_REFERENCE_CONSENT_REQUESTED" : match.status,
+      },
+    });
+
+    console.log(`[Webhook] Updated match ${match.id} DVSA caller side ${callerSide}`);
+    return NextResponse.json({ received: true, status: "updated" });
+  } catch (error) {
+    console.error("[Webhook] Error updating caller volunteer:", error);
+    return NextResponse.json(
+      { error: "Failed to update caller volunteer" },
       { status: 500 }
     );
   }

@@ -13,7 +13,7 @@ export default async function CallDvsaPage() {
     value.toLocaleString("en-GB", { dateStyle: "medium", timeStyle: "short", timeZone: "UTC" });
 
   const acceptedMatches = matches.filter(({ match }) =>
-    ["BOOKING_REFERENCE_SHARED", "COMPLETED"].includes(match.status),
+    ["CALLER_PENDING", "BOOKING_REFERENCE_CONSENT_REQUESTED", "BOOKING_REFERENCE_SHARED", "COMPLETED"].includes(match.status),
   );
   const agreedMatch = acceptedMatches[0];
   const isA = agreedMatch && listing ? agreedMatch.match.listingAId === listing.id : null;

@@ -145,17 +145,17 @@ export default async function MoveMyTestMatchPage({ params }: PageProps) {
   const iAmCaller = isA
     ? match.learnerADvsaCallerAt && 
       (!match.learnerBDvsaCallerAt || 
-       new Date(match.learnerADvsaCallerAt) >= new Date(match.learnerBDvsaCallerAt))
+       new Date(match.learnerADvsaCallerAt) <= new Date(match.learnerBDvsaCallerAt))
     : match.learnerBDvsaCallerAt && 
       (!match.learnerADvsaCallerAt || 
-       new Date(match.learnerBDvsaCallerAt) >= new Date(match.learnerADvsaCallerAt));
+       new Date(match.learnerBDvsaCallerAt) <= new Date(match.learnerADvsaCallerAt));
   const otherIsCaller = isA
     ? match.learnerBDvsaCallerAt && 
       (!match.learnerADvsaCallerAt || 
-       new Date(match.learnerBDvsaCallerAt) > new Date(match.learnerADvsaCallerAt))
+       new Date(match.learnerBDvsaCallerAt) < new Date(match.learnerADvsaCallerAt))
     : match.learnerADvsaCallerAt && 
       (!match.learnerBDvsaCallerAt || 
-       new Date(match.learnerADvsaCallerAt) > new Date(match.learnerBDvsaCallerAt));
+       new Date(match.learnerADvsaCallerAt) < new Date(match.learnerBDvsaCallerAt));
   const callerPending = match.status === "CALLER_PENDING";
   const bothAccepted = match.status === "BOTH_ACCEPTED" || match.status === "CALLER_PENDING" || match.status === "BOOKING_REFERENCE_CONSENT_REQUESTED" || match.status === "BOOKING_REFERENCE_SHARED";
   const savedBookingReference = mine.bookingReferenceEncrypted && mine.bookingReferenceIv && mine.bookingReferenceAuthTag

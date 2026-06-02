@@ -388,6 +388,12 @@ export async function revealBookingReferenceAction(_: MoveMyTestActionState, for
 
   const isA = match.listingA.accountId === session.accountId;
   const myListing = isA ? match.listingA : match.listingB;
+  const hasDvsaCaller = Boolean(match.learnerADvsaCallerAt || match.learnerBDvsaCallerAt);
+
+  if (!hasDvsaCaller && !volunteerDvsaCaller) {
+    return { status: "error", message: "One learner must volunteer to make the DVSA call before booking references are stored." };
+  }
+
   const existingSecret = match.secrets.find((secret) => secret.ownerAccountId === session.accountId && !secret.deletedAt);
   if (!existingSecret) {
     const encrypted = useSavedBookingReference && myListing.bookingReferenceEncrypted && myListing.bookingReferenceIv && myListing.bookingReferenceAuthTag
@@ -403,14 +409,47 @@ export async function revealBookingReferenceAction(_: MoveMyTestActionState, for
   if (callWindow) {
     await prisma.bookingReferenceSecret.updateMany({ where: { matchId, deletedAt: null }, data: { expiresAt: callWindow.expiresAt } });
   }
+  const callerUpdate = volunteerDvsaCaller
+    ? isA
+      ? { learnerADvsaCallerAt: match.learnerADvsaCallerAt ?? new Date() }
+      : { learnerBDvsaCallerAt: match.learnerBDvsaCallerAt ?? new Date() }
+    : {};
+
   await prisma.match.update({
     where: { id: matchId },
     data: {
-      ...(isA ? { learnerABookingReferenceConfirmedAt: new Date(), learnerADvsaCallerAt: volunteerDvsaCaller ? new Date() : null, instructorConfirmedByLearnerAtA: instructorConfirmedByLearner ? new Date() : undefined } : { learnerBBookingReferenceConfirmedAt: new Date(), learnerBDvsaCallerAt: volunteerDvsaCaller ? new Date() : null, instructorConfirmedByLearnerAtB: instructorConfirmedByLearner ? new Date() : undefined }),
+      ...(isA
+        ? { learnerABookingReferenceConfirmedAt: new Date(), instructorConfirmedByLearnerAtA: instructorConfirmedByLearner ? new Date() : undefined }
+        : { learnerBBookingReferenceConfirmedAt: new Date(), instructorConfirmedByLearnerAtB: instructorConfirmedByLearner ? new Date() : undefined }),
+      ...callerUpdate,
       status: otherConfirmed ? "BOOKING_REFERENCE_SHARED" : "BOOKING_REFERENCE_CONSENT_REQUESTED",
       ...(callWindow ? { callWindowStartedAt: callWindow.startedAt, callWindowExpiresAt: callWindow.expiresAt } : {}),
     },
   });
+
+  const shouldSyncCallerVolunteer =
+    volunteerDvsaCaller &&
+    !match.learnerADvsaCallerAt &&
+    !match.learnerBDvsaCallerAt &&
+    (match.listingA.source === "DTC" || match.listingB.source === "DTC" || Boolean(match.listingA.dtcListingId || match.listingB.dtcListingId));
+
+  if (shouldSyncCallerVolunteer) {
+    const dtcIdForMmtListing = (listing: typeof match.listingA) => {
+      if (listing.dtcListingId) return listing.dtcListingId;
+      if (listing.source === "DTC") return listing.id;
+      return listing.id;
+    };
+
+    const { pushCallerVolunteerToDTC } = await import("./cross-platform-sync");
+    await pushCallerVolunteerToDTC({
+      matchId: match.id,
+      dtcMatchId: match.dtcMatchId,
+      callerPlatform: "MMT",
+      listingAId: dtcIdForMmtListing(match.listingA),
+      listingBId: dtcIdForMmtListing(match.listingB),
+    });
+  }
+
   if (instructorConfirmedByLearner) {
     await prisma.matchEvent.create({ data: { matchId, accountId: session.accountId, eventType: "INSTRUCTOR_CONFIRMED_BY_LEARNER", detail: { confirmedBy: isA ? "LEARNER_A" : "LEARNER_B" } } });
   }
@@ -455,18 +494,59 @@ export async function volunteerDvsaCallerAction(formData: FormData) {
   const session = await requireMoveMyTestSession();
   const matchId = String(formData.get("matchId") ?? "");
   const match = await prisma.match.findFirst({
-    where: { id: matchId, OR: [{ listingA: { accountId: session.accountId } }, { listingB: { accountId: session.accountId } }] },
+    where: {
+      id: matchId,
+      status: { in: ["CALLER_PENDING", "BOOKING_REFERENCE_CONSENT_REQUESTED", "BOOKING_REFERENCE_SHARED"] },
+      OR: [{ listingA: { accountId: session.accountId } }, { listingB: { accountId: session.accountId } }],
+    },
     include: { listingA: true, listingB: true },
   });
   if (!match) return;
   const isA = match.listingA.accountId === session.accountId;
+  const ownAlreadyVolunteered = isA ? match.learnerADvsaCallerAt : match.learnerBDvsaCallerAt;
   const callerData = isA ? { learnerADvsaCallerAt: new Date() } : { learnerBDvsaCallerAt: new Date() };
   const otherAlreadyVolunteered = isA ? match.learnerBDvsaCallerAt : match.learnerADvsaCallerAt;
+
+  if (otherAlreadyVolunteered || ownAlreadyVolunteered) {
+    revalidatePath(`${TEST_SWAP_BASE_PATH}/matches/${match.id}`);
+    revalidatePath(`${TEST_SWAP_BASE_PATH}/dashboard`);
+    revalidatePath(`${TEST_SWAP_BASE_PATH}/dashboard/call-dvsa`);
+    return;
+  }
+
 // Advance to BOOKING_REFERENCE_CONSENT_REQUESTED once at least one person volunteers
   const statusUpdate = match.status === "CALLER_PENDING" ? { status: "BOOKING_REFERENCE_CONSENT_REQUESTED" as const } : {};
   await prisma.match.update({ where: { id: match.id }, data: { ...callerData, ...statusUpdate } });
   await prisma.matchEvent.create({ data: { matchId: match.id, accountId: session.accountId, eventType: "DVSA_CALLER_VOLUNTEERED" } });
   revalidatePath(`${TEST_SWAP_BASE_PATH}/matches/${match.id}`);
+  revalidatePath(`${TEST_SWAP_BASE_PATH}/dashboard`);
+  revalidatePath(`${TEST_SWAP_BASE_PATH}/dashboard/call-dvsa`);
+
+  import("./cross-platform-sync").then(({ pushCallerVolunteerToDTC }) => {
+    prisma.listing.findMany({
+      where: { id: { in: [match.listingAId, match.listingBId] } },
+      select: { id: true, source: true, dtcListingId: true },
+    }).then((listings) => {
+      const hasDtcListing = listings.some((listing) => listing.source === "DTC" || listing.dtcListingId);
+      if (!hasDtcListing) return;
+
+      const dtcIdForMmtListing = (mmtId: string) => {
+        const listing = listings.find((item) => item.id === mmtId);
+        if (!listing) return mmtId;
+        if (listing.dtcListingId) return listing.dtcListingId;
+        if (listing.source === "DTC") return listing.id;
+        return mmtId;
+      };
+
+      pushCallerVolunteerToDTC({
+        matchId: match.id,
+        dtcMatchId: match.dtcMatchId,
+        callerPlatform: "MMT",
+        listingAId: dtcIdForMmtListing(match.listingAId),
+        listingBId: dtcIdForMmtListing(match.listingBId),
+      });
+    }).catch((error) => console.error("[MMTCrossSync] Failed to prepare caller sync:", error));
+  }).catch((error) => console.error("[MMTCrossSync] Failed to load caller sync:", error));
 }
 
 export async function declineMoveMyTestMatchAction(formData: FormData) {
