@@ -38,8 +38,11 @@ const nextConfig: NextConfig = {
       { protocol: "https", hostname: "**" },
     ],
   },
-  // Skip static generation for dynamic routes that need DB
-  output: "standalone",
+  // Default Next.js build output (a regular `.next/` directory).
+  // Was previously `output: "standalone"` but that produced `.next/standalone/`
+  // which Hostinger's Node app runner doesn't pick up. The 22 May lighttpd
+  // cache issue was traced back to this mismatch — see
+  // wiki/reviews/2026-06-02-end-to-end-review.md.
   async headers() {
     return [
       {
