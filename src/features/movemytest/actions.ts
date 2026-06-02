@@ -458,7 +458,18 @@ export async function revealBookingReferenceAction(_: MoveMyTestActionState, for
       if (listing.source === "DTC") return listing.id;
       return listing.id;
     };
-    const { pushCallerVolunteerToDTC, pushBookingReferenceSharedToDTC } = await import("./cross-platform-sync");
+    const { pushCallerVolunteerToDTC, pushBookingReferenceConfirmedToDTC, pushBookingReferenceSharedToDTC } = await import("./cross-platform-sync");
+
+    // Always notify the other platform that THIS learner just confirmed their booking reference.
+    // This must run on every submission so the other side sees the per-learner flag update.
+    await pushBookingReferenceConfirmedToDTC({
+      matchId: match.id,
+      dtcMatchId: match.dtcMatchId,
+      confirmedBy: "MMT",
+      listingAId: dtcIdForMmtListing(match.listingA),
+      listingBId: dtcIdForMmtListing(match.listingB),
+      isA,
+    });
 
     if (shouldSyncCallerVolunteer) {
       await pushCallerVolunteerToDTC({

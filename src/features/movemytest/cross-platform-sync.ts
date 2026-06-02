@@ -153,6 +153,50 @@ export async function pushCallerVolunteerToDTC(payload: CallerVolunteerSyncPaylo
   }
 }
 
+interface BookingRefConfirmedSyncPayload {
+  matchId: string;
+  dtcMatchId: string | null;
+  confirmedBy: "MMT";
+  listingAId: string;
+  listingBId: string;
+  isA: boolean;
+}
+
+/**
+ * Push MMT learner booking-reference confirmation to DTC.
+ * Called when a single MMT learner confirms their booking reference (regardless of whether the other side has).
+ */
+export async function pushBookingReferenceConfirmedToDTC(payload: BookingRefConfirmedSyncPayload): Promise<void> {
+  if (!DTC_WEBHOOK_URL || !INTERNAL_API_KEY) {
+    console.log("[MMTCrossSync] DTC webhook or API key not configured, skipping booking-ref-confirmed sync");
+    return;
+  }
+
+  try {
+    const response = await fetch(DTC_WEBHOOK_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-API-Key": INTERNAL_API_KEY,
+      },
+      body: JSON.stringify({
+        event: "match.booking_reference_confirmed",
+        webhookId: `mmt_booking_ref_confirmed_${payload.matchId}_${Date.now()}`,
+        timestamp: new Date().toISOString(),
+        data: payload,
+      }),
+    });
+    if (response.ok) {
+      console.log(`[MMTCrossSync] Booking-ref-confirmed for MMT match ${payload.matchId} pushed to DTC (${response.status})`);
+    } else {
+      const errBody = await response.text().catch(() => "");
+      console.error(`[MMTCrossSync] DTC rejected booking-ref-confirmed push for match ${payload.matchId}: HTTP ${response.status} — ${errBody.slice(0, 200)}`);
+    }
+  } catch (error) {
+    console.error(`[MMTCrossSync] Error pushing booking-ref-confirmed to DTC: ${String(error)}`);
+  }
+}
+
 interface BookingRefSharedSyncPayload {
   matchId: string;
   dtcMatchId: string | null;

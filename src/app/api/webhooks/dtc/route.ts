@@ -121,6 +121,8 @@ async function handleWebhookEvent(event: string, data: any) {
       return handleDvsaCallerVolunteered(data);
     case "match.booking_reference_shared":
       return handleBookingReferenceShared(data);
+    case "match.booking_reference_confirmed":
+      return handleBookingReferenceConfirmed(data);
     case "match.cancelled":
       return handleMatchCancelled(data);
     case "match.completed":
@@ -592,6 +594,67 @@ async function handleBookingReferenceShared(data: any) {
       { error: "Failed to update booking ref" },
       { status: 500 }
     );
+  }
+}
+
+/**
+ * Handle match.booking_reference_confirmed from DTC
+ * Updates the per-learner flag when one DTC learner confirms their booking reference,
+ * so MMT can see that the DTC side has consented even if DTC finishes first.
+ */
+async function handleBookingReferenceConfirmed(data: any) {
+  const { matchId: dtcMatchId, confirmedBy } = data;
+  console.log(`[Webhook] Processing match.booking_reference_confirmed: dtcMatchId=${dtcMatchId}, confirmedBy=${confirmedBy}`);
+
+  try {
+    const match = await prisma.match.findFirst({
+      where: { dtcMatchId },
+      include: {
+        listingA: { select: { id: true, source: true, dtcListingId: true } },
+        listingB: { select: { id: true, source: true, dtcListingId: true } },
+      },
+    });
+
+    if (!match) {
+      console.warn(`[Webhook] Match ${dtcMatchId} not found for booking-ref-confirmed`);
+      return NextResponse.json({ error: "Match not found" }, { status: 404 });
+    }
+
+    const isDtcListing = (listing: { source: string; dtcListingId: string | null }) =>
+      listing.source === "DTC" || Boolean(listing.dtcListingId);
+    const confirmedSide =
+      confirmedBy === "DTC"
+        ? isDtcListing(match.listingA)
+          ? "A"
+          : "B"
+        : isDtcListing(match.listingA)
+          ? "B"
+          : "A";
+
+    const updateData: any = {};
+    if (confirmedSide === "A") {
+      updateData.learnerABookingReferenceConfirmedAt = match.learnerABookingReferenceConfirmedAt ?? new Date();
+    } else {
+      updateData.learnerBBookingReferenceConfirmedAt = match.learnerBBookingReferenceConfirmedAt ?? new Date();
+    }
+
+    if (
+      (confirmedSide === "A" && match.learnerBBookingReferenceConfirmedAt) ||
+      (confirmedSide === "B" && match.learnerABookingReferenceConfirmedAt)
+    ) {
+      updateData.status = "BOOKING_REFERENCE_SHARED";
+    }
+
+    await prisma.match.update({
+      where: { id: match.id },
+      data: updateData,
+    });
+
+    console.log(`[Webhook] Updated match ${match.id} booking-ref confirmation (side ${confirmedSide}); new status: ${updateData.status ?? "unchanged"}`);
+    return NextResponse.json({ received: true, status: "updated" });
+  } catch (error) {
+    console.error(`[Webhook] ERROR updating booking-ref confirmed: ${error}`);
+    return NextResponse.json({ error: "Failed to update booking-ref confirmed" }, { status: 500 });
   }
 }
 
