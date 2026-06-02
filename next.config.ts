@@ -10,11 +10,7 @@ import type { NextConfig } from "next";
  * / Referrer-Policy / Permissions-Policy / CSP).
  */
 const securityHeaders = [
-  // HSTS is intentionally omitted here. The site is currently being served by
-  // a Hostinger lighttpd cache layer with a cert that does not match the
-  // hostname, which surfaces as NET::ERR_CERT_AUTHORITY_INVALID. Once that
-  // cert is fixed and the live build is being served by the Node process,
-  // re-add: { key: "Strict-Transport-Security", value: "max-age=31536000; includeSubDomains; preload" }.
+  { key: "Strict-Transport-Security", value: "max-age=31536000; includeSubDomains" },
   { key: "X-Frame-Options", value: "DENY" },
   { key: "X-Content-Type-Options", value: "nosniff" },
   { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
