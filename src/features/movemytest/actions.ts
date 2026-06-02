@@ -457,7 +457,7 @@ export async function revealBookingReferenceAction(_: MoveMyTestActionState, for
       return listing.id;
     };
 
-    const { pushCallerVolunteerToDTC } = await import("./cross-platform-sync");
+    const { pushCallerVolunteerToDTC, pushBookingReferenceSharedToDTC } = await import("./cross-platform-sync");
     await pushCallerVolunteerToDTC({
       matchId: match.id,
       dtcMatchId: match.dtcMatchId,
@@ -465,6 +465,16 @@ export async function revealBookingReferenceAction(_: MoveMyTestActionState, for
       listingAId: dtcIdForMmtListing(match.listingA),
       listingBId: dtcIdForMmtListing(match.listingB),
     });
+
+    if (otherConfirmed) {
+      await pushBookingReferenceSharedToDTC({
+        matchId: match.id,
+        dtcMatchId: match.dtcMatchId,
+        sharedBy: "MMT",
+        listingAId: dtcIdForMmtListing(match.listingA),
+        listingBId: dtcIdForMmtListing(match.listingB),
+      });
+    }
   }
 
   if (instructorConfirmedByLearner) {

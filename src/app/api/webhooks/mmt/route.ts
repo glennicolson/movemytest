@@ -272,9 +272,9 @@ async function handleBookingReferenceShared(data: any) {
 
     // If both shared, mark as ready for DVSA call
     if (match.myBookingRefSharedAt && sharedBy === "MMT") {
-      updateData.status = "BOOKING_REFS_SHARED";
+      updateData.status = "BOOKING_REFERENCE_SHARED";
     } else if (match.theirBookingRefSharedAt && sharedBy === "DTC") {
-      updateData.status = "BOOKING_REFS_SHARED";
+      updateData.status = "BOOKING_REFERENCE_SHARED";
     }
 
     await prisma.testSwapMatch.update({
