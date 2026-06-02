@@ -444,27 +444,26 @@ export async function revealBookingReferenceAction(_: MoveMyTestActionState, for
     },
   });
 
-  const shouldSyncCallerVolunteer =
-    volunteerDvsaCaller &&
-    !match.learnerADvsaCallerAt &&
-    !match.learnerBDvsaCallerAt &&
-    (match.listingA.source === "DTC" || match.listingB.source === "DTC" || Boolean(match.listingA.dtcListingId || match.listingB.dtcListingId));
+  const isCrossPlatform = match.listingA.source === "DTC" || match.listingB.source === "DTC" || Boolean(match.listingA.dtcListingId || match.listingB.dtcListingId);
+  const shouldSyncCallerVolunteer = isCrossPlatform && volunteerDvsaCaller && !match.learnerADvsaCallerAt && !match.learnerBDvsaCallerAt;
 
-  if (shouldSyncCallerVolunteer) {
+  if (isCrossPlatform) {
     const dtcIdForMmtListing = (listing: typeof match.listingA) => {
       if (listing.dtcListingId) return listing.dtcListingId;
       if (listing.source === "DTC") return listing.id;
       return listing.id;
     };
-
     const { pushCallerVolunteerToDTC, pushBookingReferenceSharedToDTC } = await import("./cross-platform-sync");
-    await pushCallerVolunteerToDTC({
-      matchId: match.id,
-      dtcMatchId: match.dtcMatchId,
-      callerPlatform: "MMT",
-      listingAId: dtcIdForMmtListing(match.listingA),
-      listingBId: dtcIdForMmtListing(match.listingB),
-    });
+
+    if (shouldSyncCallerVolunteer) {
+      await pushCallerVolunteerToDTC({
+        matchId: match.id,
+        dtcMatchId: match.dtcMatchId,
+        callerPlatform: "MMT",
+        listingAId: dtcIdForMmtListing(match.listingA),
+        listingBId: dtcIdForMmtListing(match.listingB),
+      });
+    }
 
     if (otherConfirmed) {
       await pushBookingReferenceSharedToDTC({
