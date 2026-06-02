@@ -25,9 +25,9 @@ export function BookingReferenceForm({ matchId, savedBookingReference, alreadyCo
 
   const callerNotice =
     callerStatus === "i-am-caller"
-      ? "You are making the DVSA call. The other learner will be ready to receive DVSA's call."
+      ? "You have agreed to make the DVSA call. The other learner will be ready to receive DVSA's call."
       : callerStatus === "other-is-caller"
-        ? "The other learner is making the DVSA call. DVSA will call you for security checks."
+        ? "The other learner has agreed to make the DVSA call. You will receive the call from DVSA for security checks."
         : null;
 
   return (

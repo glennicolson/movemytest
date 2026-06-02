@@ -426,7 +426,7 @@ export async function revealBookingReferenceAction(_: MoveMyTestActionState, for
   if (callWindow) {
     await prisma.bookingReferenceSecret.updateMany({ where: { matchId, deletedAt: null }, data: { expiresAt: callWindow.expiresAt } });
   }
-  const callerUpdate = volunteerDvsaCaller
+  const callerUpdate = volunteerDvsaCaller && !hasDvsaCaller
     ? isA
       ? { learnerADvsaCallerAt: match.learnerADvsaCallerAt ?? new Date() }
       : { learnerBDvsaCallerAt: match.learnerBDvsaCallerAt ?? new Date() }
