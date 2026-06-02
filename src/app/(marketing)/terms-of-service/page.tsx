@@ -61,6 +61,26 @@ export default function TermsOfServicePage() {
           By using MoveMyTest, you consent to the collection and use of your information as described therein.
         </p>
 
+        <h2 className="text-xl font-semibold text-slate-900">7a. Sister service: DTC Test Swap</h2>
+        <p>
+          MoveMyTest is built and operated by the same team behind DTC Test Swap, our sister service. Some matches you receive may be with learners who originally created their listing on DTC Test Swap. In these cases, MoveMyTest and DTC Test Swap operate as integrated services to provide you with the largest possible pool of compatible swap partners.
+        </p>
+        <p>
+          When a match is made with a learner from DTC Test Swap, the only data shared with the matched learner is the date of your test and your DVSA booking reference number. We do not share your name, email address, phone number, postal address, or any other personal information. The matched learner sees the same limited data about you.
+        </p>
+        <p>
+          Your MoveMyTest account data is not shared with DTC Test Swap, and your DTC Test Swap data (if any) is not shared with MoveMyTest. The two services share only the minimum data required to propose a compatible match.
+        </p>
+
+        <h2 className="text-xl font-semibold text-slate-900">7b. Data minimisation</h2>
+        <p>
+          MoveMyTest stores the minimum data required to operate: your email address, your DVSA booking reference number, your test date, time, and centre. We do not store your driving licence number, theory test pass number, home address, payment card details, date of birth, or GOV.UK login credentials. We will never ask you for these.
+        </p>
+        <p>
+          You can request permanent deletion of your account and all associated data at any time by emailing{" "}
+          <a href="mailto:support@movemytest.co.uk" className="text-[var(--brand)] underline hover:text-[var(--brand-strong)]">support@movemytest.co.uk</a>. Deletion is permanent within 30 days of your request.
+        </p>
+
         <h2 className="text-xl font-semibold text-slate-900">8. Limitation of Liability</h2>
         <p>
           MoveMyTest is provided &quot;as is&quot; without warranties of any kind. We do not guarantee that the Service will be uninterrupted, secure, or error-free. We are not liable for any direct, indirect, incidental, or consequential damages arising from your use of the Service.

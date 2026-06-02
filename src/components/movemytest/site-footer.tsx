@@ -23,6 +23,9 @@ export function SiteFooter() {
             </Link>
           </nav>
         </div>
+        <p className="mt-6 text-center text-xs text-slate-500 sm:text-left">
+          MoveMyTest is built by the same team as DTC Test Swap, our brother service, and supported by DTC. We do not share your personal data between the two services.
+        </p>
       </div>
     </footer>
   );

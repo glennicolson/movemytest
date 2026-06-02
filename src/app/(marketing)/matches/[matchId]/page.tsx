@@ -169,6 +169,76 @@ export default async function MoveMyTestMatchPage({ params }: PageProps) {
 
   return (
     <main className="bg-white">
+      {/* ── Phase 1: Sticky step indicator (visual only) ── */}
+      <div className="sticky top-0 z-10 border-b bg-white/95 backdrop-blur" style={{ borderColor: "var(--ink-100)" }}>
+        <div className="mx-auto max-w-5xl px-4 py-3 sm:px-6 lg:px-8">
+          <div className="phase1-steps">
+            {/* Step 1: Proposed */}
+            <div
+              className="phase1-step-dot"
+              style={
+                match.status === "PROPOSED" || match.status === "DECLINED" || match.status === "EXPIRED"
+                  ? { backgroundColor: "var(--accent-amber)", boxShadow: "0 0 0 4px var(--accent-amber-soft)" }
+                  : { backgroundColor: "var(--signal-ok)" }
+              }
+              title="Match proposed"
+            />
+            <div className="phase1-step-line" style={bothAccepted ? { backgroundColor: "var(--signal-ok)" } : undefined} />
+            {/* Step 2: Accepted (both sides) */}
+            <div
+              className="phase1-step-dot"
+              style={
+                bothAccepted && (match.status === "LEARNER_A_ACCEPTED" || match.status === "LEARNER_B_ACCEPTED")
+                  ? { backgroundColor: "var(--accent-amber)", boxShadow: "0 0 0 4px var(--accent-amber-soft)" }
+                  : bothAccepted
+                  ? { backgroundColor: "var(--signal-ok)" }
+                  : undefined
+              }
+              title="Both accepted"
+            />
+            <div className="phase1-step-line" style={iAmCaller || otherIsCaller || match.learnerADvsaCallerAt || match.learnerBDvsaCallerAt ? { backgroundColor: "var(--signal-ok)" } : undefined} />
+            {/* Step 3: Caller chosen */}
+            <div
+              className="phase1-step-dot"
+              style={
+                iAmCaller || otherIsCaller
+                  ? { backgroundColor: "var(--signal-ok)" }
+                  : bothAccepted
+                  ? { backgroundColor: "var(--accent-amber)", boxShadow: "0 0 0 4px var(--accent-amber-soft)" }
+                  : undefined
+              }
+              title="Caller chosen"
+            />
+            <div className="phase1-step-line" style={match.learnerABookingReferenceConfirmedAt && match.learnerBBookingReferenceConfirmedAt ? { backgroundColor: "var(--signal-ok)" } : undefined} />
+            {/* Step 4: Booking refs */}
+            <div
+              className="phase1-step-dot"
+              style={
+                match.learnerABookingReferenceConfirmedAt && match.learnerBBookingReferenceConfirmedAt
+                  ? { backgroundColor: "var(--signal-ok)" }
+                  : bothAccepted
+                  ? { backgroundColor: "var(--accent-amber)", boxShadow: "0 0 0 4px var(--accent-amber-soft)" }
+                  : undefined
+              }
+              title="Booking references"
+            />
+            <div className="phase1-step-line" style={callInstructionsReady ? { backgroundColor: "var(--signal-ok)" } : undefined} />
+            {/* Step 5: Call DVSA */}
+            <div
+              className="phase1-step-dot"
+              style={
+                callInstructionsReady
+                  ? { backgroundColor: "var(--signal-ok)" }
+                  : bothAccepted
+                  ? { backgroundColor: "var(--accent-amber)", boxShadow: "0 0 0 4px var(--accent-amber-soft)" }
+                  : undefined
+              }
+              title="Call DVSA"
+            />
+          </div>
+        </div>
+      </div>
+
       <section className="mx-auto max-w-5xl px-4 py-6 pb-28 sm:px-6 sm:py-12 lg:px-8 lg:pb-12">
         <Link href="/dashboard" className="inline-flex items-center gap-1.5 text-sm font-semibold text-[var(--brand)] transition hover:text-[var(--brand-strong)]">
           <ArrowRight className="h-4 w-4 rotate-180" /> Back to dashboard
@@ -186,10 +256,20 @@ export default async function MoveMyTestMatchPage({ params }: PageProps) {
         </p>
         <ScoreExplanation score={match.score} />
 
-        <div className="mt-8 grid gap-5 md:grid-cols-2">
-          <div className="rounded-3xl border border-slate-200 bg-slate-50 p-6"><h2 className="text-xl font-semibold text-slate-950">Your current slot</h2><p className="mt-3 text-sm leading-6 text-slate-700">{mine.currentCentre.name}<br />{mine.currentDateTime.toLocaleString("en-GB", { dateStyle: "medium", timeStyle: "short", timeZone: "UTC" })}</p></div>
-          <div className="rounded-3xl border border-slate-200 bg-slate-50 p-6"><h2 className="text-xl font-semibold text-slate-950">Their offered slot</h2><p className="mt-3 text-sm leading-6 text-slate-700">{other.currentCentre.name}<br />{other.currentDateTime.toLocaleString("en-GB", { dateStyle: "medium", timeStyle: "short", timeZone: "UTC" })}</p></div>
+        <div className="phase1-comparison mt-8">
+          <div className="phase1-comparison-side">
+            <p className="text-xs font-semibold uppercase tracking-[0.16em]" style={{ color: "var(--ink-500)" }}>Your test</p>
+            <p className="text-base font-semibold" style={{ color: "var(--ink-900)" }}>{mine.currentCentre.name}</p>
+            <p className="text-sm" style={{ color: "var(--ink-700)" }}>{mine.currentDateTime.toLocaleString("en-GB", { dateStyle: "medium", timeStyle: "short", timeZone: "UTC" })}</p>
+          </div>
+          <div className="phase1-comparison-arrow" aria-hidden>→</div>
+          <div className="phase1-comparison-side">
+            <p className="text-xs font-semibold uppercase tracking-[0.16em]" style={{ color: "var(--ink-500)" }}>Their test</p>
+            <p className="text-base font-semibold" style={{ color: "var(--ink-900)" }}>{other.currentCentre.name}</p>
+            <p className="text-sm" style={{ color: "var(--ink-700)" }}>{other.currentDateTime.toLocaleString("en-GB", { dateStyle: "medium", timeStyle: "short", timeZone: "UTC" })}</p>
+          </div>
         </div>
+        <p className="mt-3 text-sm" style={{ color: "var(--ink-500)" }}>Both of you need to be available at the same time for a 15-minute call with DVSA.</p>
 
         {/* Next step */}
         <div className="mt-8 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
