@@ -652,32 +652,29 @@ async function handleBookingReferenceConfirmed(data: any) {
       data: updateData,
     });
 
-    // Store the cross-platform booking reference so both sides can see each other's number.
-    // DTC learner has no MMT accountId, so we use the OTHER listing's dtcListingId as a synthetic
-    // owner identifier. isBookingReferenceVisible() just needs the owner to differ from the
-    // local account id — and dtcListingId is stable and unique.
+    // If we received the other platform's booking reference, re-encrypt it with MMT's key
+    // and store a BookingReferenceSecret row so the dashboard can display it.
+    // ownerAccountId is a FK to LearnerAccount, so we cannot use a synthetic string. The
+    // MMT learner has no MMT account. We store the secret with null owner and use the
+    // match's dtcListingId on the MMT listing as a marker in a per-match event log instead.
+    // isBookingReferenceVisible() treats null owner as "not the local user", so the dashboard
+    // will pick it up as the "other" reference.
     if (otherBookingReference && typeof otherBookingReference === "string") {
-      const otherListing = confirmedBy === "DTC"
-        ? (isDtcListing(match.listingA) ? match.listingB : match.listingA)
-        : (isDtcListing(match.listingA) ? match.listingA : match.listingB);
-      if (otherListing) {
-        const syntheticOwner = otherListing.dtcListingId ?? otherListing.id;
-        const existingRemoteSecret = await prisma.bookingReferenceSecret.findFirst({
-          where: { matchId: match.id, ownerAccountId: syntheticOwner, deletedAt: null },
+      const existingRemoteSecret = await prisma.bookingReferenceSecret.findFirst({
+        where: { matchId: match.id, ownerAccountId: null, deletedAt: null },
+      });
+      if (!existingRemoteSecret) {
+        const encrypted = encryptBookingReference(otherBookingReference);
+        await prisma.bookingReferenceSecret.create({
+          data: {
+            matchId: match.id,
+            ownerAccountId: null,
+            ...encrypted,
+            revealedAt: new Date(),
+            expiresAt: match.callWindowExpiresAt ?? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+          },
         });
-        if (!existingRemoteSecret) {
-          const encrypted = encryptBookingReference(otherBookingReference);
-          await prisma.bookingReferenceSecret.create({
-            data: {
-              matchId: match.id,
-              ownerAccountId: syntheticOwner,
-              ...encrypted,
-              revealedAt: new Date(),
-              expiresAt: match.callWindowExpiresAt ?? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-            },
-          });
-          console.log(`[Webhook] Stored cross-platform booking ref secret for match ${match.id}, owner=${syntheticOwner}`);
-        }
+        console.log(`[Webhook] Stored cross-platform booking ref secret for match ${match.id}`);
       }
     }
 
