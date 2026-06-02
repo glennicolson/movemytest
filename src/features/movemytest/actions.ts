@@ -6,7 +6,7 @@ import { prisma } from "@/lib/db/prisma";
 import { requireMoveMyTestSession } from "./session";
 import { BOOKING_REFERENCE_TTL_MINUTES, isNiMoveMyTestEnabled, TEST_SWAP_BASE_PATH } from "./constants";
 import { evaluatePotentialMatch, type MatchCentre, type MatchListing } from "./matching";
-import { bookingReferenceExpiresAt, encryptBookingReference } from "./secrets";
+import { bookingReferenceExpiresAt, decryptBookingReference, encryptBookingReference } from "./secrets";
 import type { MoveMyTestActionState } from "./action-state";
 import { bookingReferenceConsentSchema, movemytestInstructorSchema, movemytestListingEditSchema, movemytestListingSchema } from "./validation";
 import { calculateDvsaCallWindow, hasDvsaCallWindowExpired } from "./dvsa-call-window";
@@ -417,13 +417,21 @@ export async function revealBookingReferenceAction(_: MoveMyTestActionState, for
   }
 
   const existingSecret = match.secrets.find((secret) => secret.ownerAccountId === session.accountId && !secret.deletedAt);
+  let rawBookingReferenceForSync: string | null = null;
   if (!existingSecret) {
-    const encrypted = useSavedBookingReference && myListing.bookingReferenceEncrypted && myListing.bookingReferenceIv && myListing.bookingReferenceAuthTag
-      ? { encryptedValue: myListing.bookingReferenceEncrypted, iv: myListing.bookingReferenceIv, authTag: myListing.bookingReferenceAuthTag }
-      : encryptBookingReference(parsed.data.bookingReference.trim());
+    const useSaved = useSavedBookingReference && myListing.bookingReferenceEncrypted && myListing.bookingReferenceIv && myListing.bookingReferenceAuthTag;
+    rawBookingReferenceForSync = useSaved
+      ? decryptBookingReference({ encryptedValue: myListing.bookingReferenceEncrypted!, iv: myListing.bookingReferenceIv!, authTag: myListing.bookingReferenceAuthTag! })
+      : parsed.data.bookingReference.trim();
+    const encrypted = useSaved
+      ? { encryptedValue: myListing.bookingReferenceEncrypted!, iv: myListing.bookingReferenceIv!, authTag: myListing.bookingReferenceAuthTag! }
+      : encryptBookingReference(rawBookingReferenceForSync);
     await prisma.bookingReferenceSecret.create({
       data: { matchId, ownerAccountId: session.accountId, ...encrypted, revealedAt: new Date(), expiresAt: match.callWindowExpiresAt ?? bookingReferenceExpiresAt(new Date(), BOOKING_REFERENCE_TTL_MINUTES) },
     });
+  } else {
+    // Existing secret — decrypt it for cross-platform sync
+    rawBookingReferenceForSync = decryptBookingReference(existingSecret);
   }
 
   const otherConfirmed = isA ? match.learnerBBookingReferenceConfirmedAt : match.learnerABookingReferenceConfirmedAt;
@@ -469,6 +477,7 @@ export async function revealBookingReferenceAction(_: MoveMyTestActionState, for
       listingAId: dtcIdForMmtListing(match.listingA),
       listingBId: dtcIdForMmtListing(match.listingB),
       isA,
+      bookingReference: rawBookingReferenceForSync,
     });
 
     if (shouldSyncCallerVolunteer) {

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { verifyWebhookSignature, isWebhookTimestampValid } from "@/lib/webhook";
 import { validateApiKey } from "@/lib/api-key";
 import { prisma } from "@/lib/db/prisma";
+import { encryptBookingReference } from "@/features/movemytest/secrets";
 
 const DTC_WEBHOOK_SECRET = process.env.DTC_WEBHOOK_SECRET;
 
@@ -603,8 +604,8 @@ async function handleBookingReferenceShared(data: any) {
  * so MMT can see that the DTC side has consented even if DTC finishes first.
  */
 async function handleBookingReferenceConfirmed(data: any) {
-  const { matchId: dtcMatchId, confirmedBy } = data;
-  console.log(`[Webhook] Processing match.booking_reference_confirmed: dtcMatchId=${dtcMatchId}, confirmedBy=${confirmedBy}`);
+  const { matchId: dtcMatchId, confirmedBy, bookingReference: otherBookingReference } = data;
+  console.log(`[Webhook] Processing match.booking_reference_confirmed: dtcMatchId=${dtcMatchId}, confirmedBy=${confirmedBy}, hasRef=${Boolean(otherBookingReference)}`);
 
   try {
     const match = await prisma.match.findFirst({
@@ -612,6 +613,7 @@ async function handleBookingReferenceConfirmed(data: any) {
       include: {
         listingA: { select: { id: true, source: true, dtcListingId: true } },
         listingB: { select: { id: true, source: true, dtcListingId: true } },
+        secrets: true,
       },
     });
 
@@ -649,6 +651,35 @@ async function handleBookingReferenceConfirmed(data: any) {
       where: { id: match.id },
       data: updateData,
     });
+
+    // Store the cross-platform booking reference so both sides can see each other's number.
+    // DTC learner has no MMT accountId, so we use the OTHER listing's dtcListingId as a synthetic
+    // owner identifier. isBookingReferenceVisible() just needs the owner to differ from the
+    // local account id — and dtcListingId is stable and unique.
+    if (otherBookingReference && typeof otherBookingReference === "string") {
+      const otherListing = confirmedBy === "DTC"
+        ? (isDtcListing(match.listingA) ? match.listingB : match.listingA)
+        : (isDtcListing(match.listingA) ? match.listingA : match.listingB);
+      if (otherListing) {
+        const syntheticOwner = otherListing.dtcListingId ?? otherListing.id;
+        const existingRemoteSecret = await prisma.bookingReferenceSecret.findFirst({
+          where: { matchId: match.id, ownerAccountId: syntheticOwner, deletedAt: null },
+        });
+        if (!existingRemoteSecret) {
+          const encrypted = encryptBookingReference(otherBookingReference);
+          await prisma.bookingReferenceSecret.create({
+            data: {
+              matchId: match.id,
+              ownerAccountId: syntheticOwner,
+              ...encrypted,
+              revealedAt: new Date(),
+              expiresAt: match.callWindowExpiresAt ?? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+            },
+          });
+          console.log(`[Webhook] Stored cross-platform booking ref secret for match ${match.id}, owner=${syntheticOwner}`);
+        }
+      }
+    }
 
     console.log(`[Webhook] Updated match ${match.id} booking-ref confirmation (side ${confirmedSide}); new status: ${updateData.status ?? "unchanged"}`);
     return NextResponse.json({ received: true, status: "updated" });

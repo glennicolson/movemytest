@@ -160,6 +160,7 @@ interface BookingRefConfirmedSyncPayload {
   listingAId: string;
   listingBId: string;
   isA: boolean;
+  bookingReference: string;
 }
 
 /**
