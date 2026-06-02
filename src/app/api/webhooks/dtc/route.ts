@@ -189,6 +189,16 @@ async function handleListingSynced(data: any) {
         },
       });
       console.log(`[Webhook] Updated DTC shadow listing ${dtcListingId} → MMT ${existing.id}`);
+
+      // Re-run matching on updates as well. This heals existing cross-platform
+      // pairs where the shadow listing existed but its proposed match was not
+      // previously pushed back to DTC.
+      try {
+        const { createPotentialMatchesForListing } = await import("@/features/movemytest/actions");
+        await createPotentialMatchesForListing(existing.id);
+      } catch (matchErr) {
+        console.error(`[Webhook] Matching skipped for shadow listing ${existing.id}:`, matchErr);
+      }
     } else {
       // Create new shadow
       const created = await prisma.listing.create({

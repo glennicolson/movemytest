@@ -201,9 +201,7 @@ export async function runMatchingForListing(listingId: string) {
           ],
         },
       });
-      if (existing) continue;
-
-      const newMatch = await prisma.match.create({
+      const newMatch = existing ?? await prisma.match.create({
         data: {
           listingAId: listing.id,
           listingBId: candidate.id,
@@ -214,18 +212,34 @@ export async function runMatchingForListing(listingId: string) {
         },
       });
 
-      // Send webhook to DTC if matching with DTC listing
-      if (candidate.source === "DTC") {
+      const listingIsDtc = listing.source === "DTC";
+      const candidateIsDtc = candidate.source === "DTC";
+      const isCrossPlatformDtcMatch = listingIsDtc !== candidateIsDtc;
+
+      // Send webhook to DTC if exactly one side is a DTC shadow listing,
+      // regardless of whether that listing is the primary listing or candidate.
+      if (isCrossPlatformDtcMatch && !newMatch.dtcMatchId) {
         const { notifyDtcOfMatchProposed } = await import("./webhooks");
-        await notifyDtcOfMatchProposed(
+        const mmtListing = listingIsDtc ? candidateListing : myListing;
+        const dtcListing = listingIsDtc
+          ? { ...myListing, dtcListingId: listing.dtcListingId }
+          : { ...candidateListing, dtcListingId: candidate.dtcListingId };
+        const result = await notifyDtcOfMatchProposed(
           newMatch.id,
-          myListing,
-          { ...candidateListing, dtcListingId: candidate.dtcListingId },
+          mmtListing,
+          dtcListing,
           evaluation.score
-        ).catch(err => {
+        ).catch((err) => {
           console.error("[Matching] Failed to notify DTC of match:", err);
+          return null;
           // Don't throw — match is still valid even if webhook fails
         });
+        if (result?.success && result.dtcMatchId) {
+          await prisma.match.update({
+            where: { id: newMatch.id },
+            data: { dtcMatchId: result.dtcMatchId },
+          });
+        }
       }
     }
   }

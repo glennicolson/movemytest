@@ -89,18 +89,35 @@ export async function createPotentialMatchesForListing(listingId: string) {
     if (newMatch) {
       await scheduleMatchProposedEmails(newMatch.id);
       await sendQueuedMoveMyTestEmailsAction(newMatch.id);
-      
-      // Send webhook to DTC if matching with DTC listing
-      if (candidate.source === "DTC") {
+
+      const listingIsDtc = listing.source === "DTC";
+      const candidateIsDtc = candidate.source === "DTC";
+      const isCrossPlatformDtcMatch = listingIsDtc !== candidateIsDtc;
+
+      // Send webhook to DTC whenever exactly one side is a DTC shadow listing.
+      // This covers both event orders: MMT listing first, then DTC listing sync;
+      // or DTC shadow already present when a new MMT listing is created.
+      if (isCrossPlatformDtcMatch && !newMatch.dtcMatchId) {
         const { notifyDtcOfMatchProposed } = await import("./webhooks");
-        await notifyDtcOfMatchProposed(
+        const mmtListing = listingIsDtc ? b : a;
+        const dtcListing = listingIsDtc
+          ? { ...a, dtcListingId: listing.dtcListingId }
+          : { ...b, dtcListingId: candidate.dtcListingId };
+        const result = await notifyDtcOfMatchProposed(
           newMatch.id,
-          a,
-          { ...b, dtcListingId: candidate.dtcListingId },
+          mmtListing,
+          dtcListing,
           evaluation.score
-        ).catch(err => {
+        ).catch((err) => {
           console.error("[Matching] Failed to notify DTC of match:", err);
+          return null;
         });
+        if (result?.success && result.dtcMatchId) {
+          await prisma.match.update({
+            where: { id: newMatch.id },
+            data: { dtcMatchId: result.dtcMatchId },
+          });
+        }
       }
     }
   }

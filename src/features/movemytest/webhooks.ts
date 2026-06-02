@@ -9,7 +9,7 @@ export async function notifyDtcOfMatchProposed(
   mmtListing: MatchListing,
   dtcListing: MatchListing & { dtcListingId?: string | null },
   score: number
-): Promise<{ success: boolean; error?: string }> {
+): Promise<{ success: boolean; error?: string; dtcMatchId?: string }> {
   const dtcListingId = dtcListing.dtcListingId || dtcListing.id;
 
   const result = await sendMatchToDTC({
@@ -43,5 +43,5 @@ export async function notifyDtcOfMatchProposed(
     },
   });
 
-  return { success: result.success, error: result.error };
+  return { success: result.success, error: result.error, dtcMatchId: result.matchId };
 }

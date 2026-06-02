@@ -40,7 +40,7 @@ interface MatchPayload {
 /**
  * Send match data to DTC via internal API
  */
-export async function sendMatchToDTC(payload: MatchPayload): Promise<{ success: boolean; error?: string; statusCode?: number }> {
+export async function sendMatchToDTC(payload: MatchPayload): Promise<{ success: boolean; error?: string; statusCode?: number; matchId?: string }> {
   if (!DTC_API_URL || !INTERNAL_API_KEY) {
     console.log("[Internal API] DTC API not configured, skipping");
     return { success: false, error: "DTC API not configured" };
@@ -60,7 +60,7 @@ export async function sendMatchToDTC(payload: MatchPayload): Promise<{ success: 
 
     if (response.ok) {
       console.log(`[Internal API] Match sent to DTC: ${payload.matchId} (status: ${response.status})`);
-      return { success: true, statusCode: response.status };
+      return { success: true, statusCode: response.status, matchId: data?.matchId };
     } else {
       const error = data?.error || `HTTP ${response.status}`;
       console.error(`[Internal API] Failed to send match to DTC: ${error}`);
