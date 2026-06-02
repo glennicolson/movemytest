@@ -1,7 +1,12 @@
 import { createCipheriv, createDecipheriv, createHash, randomBytes } from "node:crypto";
+import { getSecret } from "@/lib/auth/secret";
 
 export function getMoveMyTestSecretKey() {
-  const source = process.env.TEST_SWAP_SECRET_KEY || process.env.AUTH_SECRET || "dtc-dev-movemytest-secret-change-me";
+  const source = getSecret(
+    "TEST_SWAP_SECRET_KEY/AUTH_SECRET",
+    ["TEST_SWAP_SECRET_KEY", "AUTH_SECRET"],
+    { devFallback: "dtc-dev-movemytest-secret-change-me", minLength: 32 },
+  );
   return createHash("sha256").update(source).digest();
 }
 

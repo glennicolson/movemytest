@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { SESSION_COOKIE_NAME, SESSION_TTL_SECONDS } from "@/lib/auth/constants";
 import { buildLoginRedirect, sanitizeRedirectTarget } from "@/lib/auth/navigation";
 import { roleToSurface, type AppRole, type AppSurface } from "@/lib/auth/roles";
+import { getSecret } from "@/lib/auth/secret";
 
 export type AppSession = {
   userId: string;
@@ -26,20 +27,11 @@ type SessionPayload = {
 const SESSION_TTL_MS = SESSION_TTL_SECONDS * 1000;
 
 function getSessionSecret(): string {
-  const secret = process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET;
-  if (!secret) {
-    if (process.env.NODE_ENV === "production") {
-      throw new Error(
-        "AUTH_SECRET is not set. Session security requires a strong random secret in production. " +
-        "Set the AUTH_SECRET environment variable to at least 48 characters."
-      );
-    }
-    console.warn(
-      "⚠️ AUTH_SECRET is not set. Using insecure dev fallback. Set AUTH_SECRET before deploying."
-    );
-    return "dtc-dev-secret-change-me";
-  }
-  return secret;
+  return getSecret(
+    "AUTH_SECRET",
+    ["AUTH_SECRET", "NEXTAUTH_SECRET"],
+    { devFallback: "dtc-dev-secret-change-me", minLength: 48 },
+  );
 }
 
 function signPayload(payload: string) {

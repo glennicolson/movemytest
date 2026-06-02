@@ -1,23 +1,17 @@
 import { createCipheriv, createDecipheriv, createHash, randomBytes, timingSafeEqual } from "node:crypto";
 import * as OTPAuth from "otpauth";
+import { getSecret } from "@/lib/auth/secret";
 
 const MFA_ENCRYPTION_PREFIX = "mfa1";
 const MFA_BACKUP_CODE_BYTES = 5;
 
 function getMfaEncryptionKey(): Buffer {
-  const source = process.env.MFA_ENCRYPTION_KEY || process.env.AUTH_SECRET;
-  if (!source) {
-    if (process.env.NODE_ENV === "production") {
-      throw new Error(
-        "MFA_ENCRYPTION_KEY (or AUTH_SECRET) is not set. MFA encryption requires a strong secret in production. " +
-        "Set MFA_ENCRYPTION_KEY to a strong random value (at least 48 characters)."
-      );
-    }
-    console.warn(
-      "⚠️ MFA_ENCRYPTION_KEY is not set. Using AUTH_SECRET or dev fallback. Set a dedicated MFA_ENCRYPTION_KEY before deploying."
-    );
-  }
-  return createHash("sha256").update(source || "dtc-dev-secret-change-me").digest();
+  const source = getSecret(
+    "MFA_ENCRYPTION_KEY/AUTH_SECRET",
+    ["MFA_ENCRYPTION_KEY", "AUTH_SECRET"],
+    { devFallback: "dtc-dev-secret-change-me", minLength: 48 },
+  );
+  return createHash("sha256").update(source).digest();
 }
 
 export function encryptMfaSecret(value: string) {

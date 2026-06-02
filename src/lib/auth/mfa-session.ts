@@ -2,6 +2,7 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 import { cookies } from "next/headers";
 import { MFA_CHALLENGE_COOKIE_NAME, MFA_CHALLENGE_TTL_SECONDS } from "@/lib/auth/constants";
 import type { AppRole } from "@/lib/auth/roles";
+import { getSecret } from "@/lib/auth/secret";
 
 type MfaChallengePayload = {
   userId: string;
@@ -12,25 +13,16 @@ type MfaChallengePayload = {
   exp: number;
 };
 
-function getSecret(): string {
-  const secret = process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET;
-  if (!secret) {
-    if (process.env.NODE_ENV === "production") {
-      throw new Error(
-        "AUTH_SECRET is not set. MFA challenge cookies require a strong random secret in production. " +
-        "Set the AUTH_SECRET environment variable."
-      );
-    }
-    console.warn(
-      "⚠️ AUTH_SECRET is not set for MFA challenge signing. Using insecure dev fallback."
-    );
-    return "dtc-dev-secret-change-me";
-  }
-  return secret;
+function getChallengeSecret(): string {
+  return getSecret(
+    "AUTH_SECRET (MFA challenge)",
+    ["AUTH_SECRET", "NEXTAUTH_SECRET"],
+    { devFallback: "dtc-dev-secret-change-me", minLength: 48 },
+  );
 }
 
 function signPayload(payload: string) {
-  return createHmac("sha256", getSecret()).update(payload).digest("hex");
+  return createHmac("sha256", getChallengeSecret()).update(payload).digest("hex");
 }
 
 function encodePayload(payload: MfaChallengePayload) {

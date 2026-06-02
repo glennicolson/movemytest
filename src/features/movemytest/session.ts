@@ -2,6 +2,7 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db/prisma";
+import { getSecret } from "@/lib/auth/secret";
 
 export const TEST_SWAP_SESSION_COOKIE = "movemytest_session";
 const TEST_SWAP_SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000;
@@ -18,12 +19,11 @@ export type MoveMyTestSession = {
 };
 
 function getSessionSecret() {
-  const secret = process.env.TEST_SWAP_SECRET_KEY || process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET;
-  if (!secret) {
-    if (process.env.NODE_ENV === "production") throw new Error("TEST_SWAP_SECRET_KEY or AUTH_SECRET is required for MoveMyTest sessions.");
-    return "dtc-movemytest-dev-secret-change-me";
-  }
-  return secret;
+  return getSecret(
+    "MoveMyTest session secret",
+    ["TEST_SWAP_SECRET_KEY", "AUTH_SECRET", "NEXTAUTH_SECRET"],
+    { devFallback: "dtc-movemytest-dev-secret-change-me", minLength: 32 },
+  );
 }
 
 function signPayload(payload: string) {

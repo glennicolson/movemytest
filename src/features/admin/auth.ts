@@ -4,22 +4,20 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db/prisma";
+import { getSecret } from "@/lib/auth/secret";
 
 const SESSION_TTL_SECONDS = 8 * 60 * 60; // 8 hours
 
-function getSessionSecret(): string {
-  const secret = process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET;
-  if (!secret) {
-    if (process.env.NODE_ENV === "production") {
-      throw new Error("AUTH_SECRET is not set.");
-    }
-    return "movemytest-dev-secret-change-me";
-  }
-  return secret;
+function getAdminSessionSecret(): string {
+  return getSecret(
+    "AUTH_SECRET (admin session)",
+    ["AUTH_SECRET", "NEXTAUTH_SECRET"],
+    { devFallback: "movemytest-dev-secret-change-me", minLength: 48 },
+  );
 }
 
 function signSession(payload: string): string {
-  const secret = getSessionSecret();
+  const secret = getAdminSessionSecret();
   return createHmac("sha256", secret).update(payload).digest("hex");
 }
 

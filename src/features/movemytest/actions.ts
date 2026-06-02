@@ -379,7 +379,6 @@ export async function acceptMoveMyTestMatchAction(formData: FormData) {
 }
 
 export async function revealBookingReferenceAction(_: MoveMyTestActionState, formData: FormData): Promise<MoveMyTestActionState> {
-  console.log("[revealBookingReferenceAction] Called with matchId:", String(formData.get("matchId") ?? ""), "accountId:", "session");
   const session = await requireMoveMyTestSession();
   const matchId = String(formData.get("matchId") ?? "");
   const useSavedBookingReference = String(formData.get("useSavedBookingReference") ?? "") === "on";
@@ -393,7 +392,6 @@ export async function revealBookingReferenceAction(_: MoveMyTestActionState, for
     volunteerDvsaCaller: volunteerDvsaCaller ? "on" : (void 0 as unknown as string),
   });
   if (!parsed.success) {
-    console.log("[revealBookingReferenceAction] Schema parse failed:", parsed.error.issues[0]?.message);
     return { status: "error", message: parsed.error.issues[0]?.message ?? "Please check the consent form." };
   }
 
@@ -401,7 +399,6 @@ export async function revealBookingReferenceAction(_: MoveMyTestActionState, for
     where: { id: matchId, status: { in: ["CALLER_PENDING", "BOOKING_REFERENCE_CONSENT_REQUESTED", "BOOKING_REFERENCE_SHARED"] }, OR: [{ listingA: { accountId: session.accountId } }, { listingB: { accountId: session.accountId } }] },
     include: { listingA: true, listingB: true, secrets: true },
   });
-  console.log("[revealBookingReferenceAction] Match found:", match?.id ?? "NULL", "current status:", match?.status ?? "n/a");
   if (!match) return { status: "error", message: "Booking references can only be shared after both learners accept the match." };
   if (hasDvsaCallWindowExpired(match.callWindowExpiresAt, new Date()) && !match.learnerACompletedAt && !match.learnerBCompletedAt) {
     await prisma.match.update({ where: { id: match.id }, data: { status: "EXPIRED", cancelledAt: new Date(), cancelReason: "DVSA call window expired before either learner marked the match complete." } });
@@ -505,7 +502,6 @@ export async function revealBookingReferenceAction(_: MoveMyTestActionState, for
     await prisma.matchEvent.create({ data: { matchId, accountId: session.accountId, eventType: "INSTRUCTOR_CONFIRMED_BY_LEARNER", detail: { confirmedBy: isA ? "LEARNER_A" : "LEARNER_B" } } });
   }
   await prisma.matchEvent.create({ data: { matchId, accountId: session.accountId, eventType: "BOOKING_REFERENCE_REVEALED", detail: { ttlMinutes: BOOKING_REFERENCE_TTL_MINUTES } } });
-  console.log("[revealBookingReferenceAction] Match updated. status:", otherConfirmed ? "BOOKING_REFERENCE_SHARED" : "BOOKING_REFERENCE_CONSENT_REQUESTED", "otherConfirmed:", Boolean(otherConfirmed), "isCrossPlatform:", match.listingA.source === "DTC" || match.listingB.source === "DTC" || Boolean(match.listingA.dtcListingId || match.listingB.dtcListingId));
   
 // Schedule automated email reminders
   await scheduleMatchEmailQueue(matchId);

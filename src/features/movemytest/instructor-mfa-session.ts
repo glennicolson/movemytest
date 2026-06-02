@@ -1,5 +1,6 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { cookies } from "next/headers";
+import { getSecret } from "@/lib/auth/secret";
 
 export const TEST_SWAP_INSTRUCTOR_MFA_CHALLENGE_COOKIE = "movemytest_instructor_mfa_challenge";
 const MFA_CHALLENGE_TTL_SECONDS = 60 * 10;
@@ -11,17 +12,16 @@ type InstructorMfaChallengePayload = {
   exp: number;
 };
 
-function getSecret() {
-  const secret = process.env.TEST_SWAP_SECRET_KEY || process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET;
-  if (!secret) {
-    if (process.env.NODE_ENV === "production") throw new Error("TEST_SWAP_SECRET_KEY or AUTH_SECRET is required for instructor MFA challenges.");
-    return "dtc-movemytest-instructor-mfa-dev-secret-change-me";
-  }
-  return secret;
+function getInstructorMfaSecret() {
+  return getSecret(
+    "MoveMyTest instructor MFA challenge secret",
+    ["TEST_SWAP_SECRET_KEY", "AUTH_SECRET", "NEXTAUTH_SECRET"],
+    { devFallback: "dtc-movemytest-instructor-mfa-dev-secret-change-me", minLength: 32 },
+  );
 }
 
 function signPayload(payload: string) {
-  return createHmac("sha256", getSecret()).update(payload).digest("hex");
+  return createHmac("sha256", getInstructorMfaSecret()).update(payload).digest("hex");
 }
 
 function encodePayload(payload: InstructorMfaChallengePayload) {
