@@ -488,6 +488,28 @@ model EmailQueue {
   @@index([matchId, kind, recipient])
 }
 
+// ── SMS Queue ──
+model SmsQueue {
+  id            String    @id @default(cuid())
+  matchId       String
+  kind          String
+  recipient     String
+  recipientRole String    @default("LEARNER")
+  scheduledFor  DateTime
+  sentAt        DateTime?
+  error         String?   @db.Text
+  retryCount    Int       @default(0)
+  maxRetries    Int       @default(3)
+  status        String    @default("PENDING")
+  twilioSid     String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([status, scheduledFor])
+  @@index([matchId])
+  @@index([matchId, kind, recipient])
+}
+
 // ── Admin Note ──
 model AdminNote {
   id           String   @id @default(cuid())

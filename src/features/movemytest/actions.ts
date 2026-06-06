@@ -12,6 +12,7 @@ import { bookingReferenceConsentSchema, movemytestInstructorSchema, movemytestLi
 import { calculateDvsaCallWindow, hasDvsaCallWindowExpired } from "./dvsa-call-window";
 import { calculateMatchExpiry } from "./business-days";
 import { scheduleMatchEmailQueue, sendQueuedMoveMyTestEmailsAction, scheduleMatchProposedEmails } from "./email-queue";
+import { scheduleMatchSmsQueue, scheduleMatchProposedSms, sendQueuedSmsAction } from "./sms-queue";
 
 function normalizeAdiNumber(value: string) {
   return value.trim().toUpperCase().replace(/\s+/g, "");
@@ -88,6 +89,7 @@ export async function createPotentialMatchesForListing(listingId: string) {
     });
     if (newMatch) {
       await scheduleMatchProposedEmails(newMatch.id);
+      await scheduleMatchProposedSms(newMatch.id);
       await sendQueuedMoveMyTestEmailsAction(newMatch.id);
 
       const listingIsDtc = listing.source === "DTC";
@@ -503,8 +505,9 @@ export async function revealBookingReferenceAction(_: MoveMyTestActionState, for
   }
   await prisma.matchEvent.create({ data: { matchId, accountId: session.accountId, eventType: "BOOKING_REFERENCE_REVEALED", detail: { ttlMinutes: BOOKING_REFERENCE_TTL_MINUTES } } });
   
-// Schedule automated email reminders
+// Schedule automated email + SMS reminders
   await scheduleMatchEmailQueue(matchId);
+  await scheduleMatchSmsQueue(matchId);
   
   revalidatePath(`${TEST_SWAP_BASE_PATH}/matches/${matchId}`);
   revalidatePath(`${TEST_SWAP_BASE_PATH}/dashboard`);
@@ -532,6 +535,7 @@ export async function completeMoveMyTestMatchAction(formData: FormData) {
 
 // One learner's confirmation after the DVSA call closes the swap, because DVSA has already completed the official change.
   const queuedEmails = await scheduleMatchEmailQueue(match.id);
+  await scheduleMatchSmsQueue(match.id);
   if (queuedEmails > 0) {
     await sendQueuedMoveMyTestEmailsAction(match.id);
   }
