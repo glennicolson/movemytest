@@ -7,20 +7,16 @@
 -- The live DB only has the original shape. Without these columns, every
 -- /dashboard/settings page load fails with "column does not exist".
 --
--- IMPORTANT: phpMyAdmin must have the MMT DB selected (left sidebar) before
--- you run this — the queries below use DATABASE(). If you see "Unknown
--- table 'LearnerAccount' in information_schema", that's the symptom of no
--- DB selected. Either click `u385361430_movedata` in the sidebar first,
--- or uncomment the USE line below.
---
--- USE `u385361430_movedata`;   -- uncomment if your client doesn't have a DB selected
---
 -- Same idempotent pattern as the DTC phase 8.2 fix: information_schema
 -- guards instead of `ADD COLUMN IF NOT EXISTS` (MariaDB-only).
 --
 -- We use the information_schema guard pattern instead of `ADD COLUMN IF NOT EXISTS`
 -- so it works on both MySQL 5.7+ and MariaDB 10.x (per the recurrence
 -- flagged in MEMORY.md 2026-05-03 and 2026-05-22).
+
+-- Select the live MMT DB. Must be uncommented so the queries below can
+-- find LearnerAccount without needing the phpMyAdmin sidebar to be on it.
+USE `u385361430_movedata`;
 
 -- smsOptOutAt
 SET @sql_smsOptOutAt = (SELECT IF(

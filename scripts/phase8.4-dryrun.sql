@@ -3,13 +3,9 @@
 -- Tells you exactly which columns the migration will add, without writing.
 -- ============================================================================
 
--- IMPORTANT: phpMyAdmin must have the MMT DB selected (left sidebar) before
--- you run this — the queries below use DATABASE() and unqualified table names.
--- If you see "Unknown table 'LearnerAccount' in information_schema", that's
--- the symptom of no DB selected. Either click `u385361430_movedata` in the
--- sidebar first, or uncomment the USE line below.
---
--- USE `u385361430_movedata`;   -- uncomment if your client doesn't have a DB selected
+-- Select the live MMT DB. This MUST be uncommented so the query below can
+-- find LearnerAccount without needing the phpMyAdmin sidebar to be on it.
+USE `u385361430_movedata`;
 
 -- Counts
 SELECT

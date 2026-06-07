@@ -3,13 +3,9 @@
 -- Confirms the migration did what it should have.
 -- ============================================================================
 
--- IMPORTANT: phpMyAdmin must have the MMT DB selected (left sidebar) before
--- you run this — the queries below use DATABASE(). If you see "Unknown
--- table 'LearnerAccount' in information_schema", that's the symptom of no
--- DB selected. Either click `u385361430_movedata` in the sidebar first,
--- or uncomment the USE line below.
---
--- USE `u385361430_movedata`;   -- uncomment if your client doesn't have a DB selected
+-- Select the live MMT DB. Must be uncommented so the queries below can
+-- find LearnerAccount without needing the phpMyAdmin sidebar to be on it.
+USE `u385361430_movedata`;
 
 -- Should show 3 rows: smsOptOutAt, smsOptOutReason, lastOptOutAt
 SELECT COLUMN_NAME, COLUMN_TYPE, IS_NULLABLE, COLUMN_DEFAULT
