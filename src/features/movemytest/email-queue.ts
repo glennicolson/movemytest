@@ -249,12 +249,12 @@ export async function sendQueuedMoveMyTestEmailsAction(matchId?: string) {
   const now = new Date();
   const pending = matchId
     ? await (prisma as any).$queryRawUnsafe(
-        "SELECT * FROM MoveMyTestEmailQueue WHERE status = 'PENDING' AND scheduledFor <= ? AND matchId = ?",
+        "SELECT * FROM `EmailQueue` WHERE status = 'PENDING' AND scheduledFor <= ? AND matchId = ?",
         now.toISOString(),
         matchId,
       ) as EmailQueueRow[]
     : await (prisma as any).$queryRawUnsafe(
-        "SELECT * FROM MoveMyTestEmailQueue WHERE status = 'PENDING' AND scheduledFor <= ?",
+        "SELECT * FROM `EmailQueue` WHERE status = 'PENDING' AND scheduledFor <= ?",
         now.toISOString(),
       ) as EmailQueueRow[];
 
@@ -270,7 +270,7 @@ export async function sendQueuedMoveMyTestEmailsAction(matchId?: string) {
 // Skip reminders if match is already completed or expired
       if ((item.kind === "SWAP_INCOMPLETE_REMINDER" || item.kind === "SWAP_COMPLETED_NOT_CLOSED" || item.kind === "MATCH_ACCEPTANCE_REMINDER" || item.kind === "MATCH_FINAL_WARNING") && ["COMPLETED", "EXPIRED"].includes(matchStatus ?? "")) {
         await (prisma as any).$executeRawUnsafe(
-          "UPDATE MoveMyTestEmailQueue SET status = 'SKIPPED', updatedAt = ? WHERE id = ?",
+          "UPDATE `EmailQueue` SET status = 'SKIPPED', updatedAt = ? WHERE id = ?",
           now.toISOString(),
           item.id,
         );
@@ -280,7 +280,7 @@ export async function sendQueuedMoveMyTestEmailsAction(matchId?: string) {
 // Skip MATCH_FOUND if match is no longer proposed
       if (item.kind === "MATCH_FOUND" && matchStatus !== "PROPOSED") {
         await (prisma as any).$executeRawUnsafe(
-          "UPDATE MoveMyTestEmailQueue SET status = 'SKIPPED', updatedAt = ? WHERE id = ?",
+          "UPDATE `EmailQueue` SET status = 'SKIPPED', updatedAt = ? WHERE id = ?",
           now.toISOString(),
           item.id,
         );
@@ -290,7 +290,7 @@ export async function sendQueuedMoveMyTestEmailsAction(matchId?: string) {
 // Skip decline notification if match is no longer declined
       if (item.kind === "MATCH_DECLINED" && matchStatus !== "DECLINED") {
         await (prisma as any).$executeRawUnsafe(
-          "UPDATE MoveMyTestEmailQueue SET status = 'SKIPPED', updatedAt = ? WHERE id = ?",
+          "UPDATE `EmailQueue` SET status = 'SKIPPED', updatedAt = ? WHERE id = ?",
           now.toISOString(),
           item.id,
         );
@@ -334,13 +334,13 @@ export async function sendQueuedMoveMyTestEmailsAction(matchId?: string) {
       const subject = subjectForKind(item.kind as MoveMyTestEmailQueueKind);
       await mailer().sendMail({ from: fromAddress(), to: item.recipient, bcc: TRUSTPILOT_BCC, subject, html: htmlBody(body) });
       await (prisma as any).$executeRawUnsafe(
-        "UPDATE MoveMyTestEmailQueue SET status = 'SENT', sentAt = ?, updatedAt = ? WHERE id = ?",
+        "UPDATE `EmailQueue` SET status = 'SENT', sentAt = ?, updatedAt = ? WHERE id = ?",
         now.toISOString(), now.toISOString(), item.id,
       );
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       await (prisma as any).$executeRawUnsafe(
-        "UPDATE MoveMyTestEmailQueue SET retryCount = retryCount + 1, status = ?, error = ?, updatedAt = ? WHERE id = ?",
+        "UPDATE `EmailQueue` SET retryCount = retryCount + 1, status = ?, error = ?, updatedAt = ? WHERE id = ?",
         (item.retryCount ?? 0) >= 2 ? "FAILED" : "PENDING",
         message.slice(0, 500),
         now.toISOString(),
@@ -399,7 +399,7 @@ export async function scheduleMatchEmailQueue(matchId: string, now = new Date())
   /* eslint-disable @typescript-eslint/no-explicit-any */
   for (const email of emails) {
     await (prisma as any).$executeRawUnsafe(
-      "INSERT INTO MoveMyTestEmailQueue (id, matchId, kind, recipient, recipientRole, scheduledFor, retryCount, maxRetries, status) VALUES (?, ?, ?, ?, ?, ?, 0, 3, 'PENDING')",
+      "INSERT INTO `EmailQueue` (id, matchId, kind, recipient, recipientRole, scheduledFor, retryCount, maxRetries, status) VALUES (?, ?, ?, ?, ?, ?, 0, 3, 'PENDING')",
       `email_${matchId}_${email.kind}_${email.recipient}_${Date.now()}`.slice(0, 191),
       matchId,
       email.kind,
@@ -453,7 +453,7 @@ export async function scheduleMatchProposedEmails(matchId: string, now = new Dat
   /* eslint-disable @typescript-eslint/no-explicit-any */
   for (const email of emails) {
     await (prisma as any).$executeRawUnsafe(
-      "INSERT INTO MoveMyTestEmailQueue (id, matchId, kind, recipient, recipientRole, scheduledFor, retryCount, maxRetries, status) VALUES (?, ?, ?, ?, ?, ?, 0, 3, 'PENDING')",
+      "INSERT INTO `EmailQueue` (id, matchId, kind, recipient, recipientRole, scheduledFor, retryCount, maxRetries, status) VALUES (?, ?, ?, ?, ?, ?, 0, 3, 'PENDING')",
       `email_${matchId}_${email.kind}_${email.recipient}_${Date.now()}`.slice(0, 191),
       matchId,
       email.kind,
