@@ -10,6 +10,14 @@
 -- these columns. As of 2026-06-07, no other feature reads them.
 -- ============================================================================
 
+-- IMPORTANT: phpMyAdmin must have the MMT DB selected (left sidebar) before
+-- you run this — the queries below use DATABASE(). If you see "Unknown
+-- table 'LearnerAccount' in information_schema", that's the symptom of no
+-- DB selected. Either click `u385361430_movedata` in the sidebar first,
+-- or uncomment the USE line below.
+--
+-- USE `u385361430_movedata`;   -- uncomment if your client doesn't have a DB selected
+
 -- Step 1: Show current state (sanity check)
 SELECT COLUMN_NAME, COLUMN_TYPE
 FROM information_schema.COLUMNS
