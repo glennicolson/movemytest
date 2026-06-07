@@ -27,10 +27,10 @@ export default async function AccountPage() {
           />
         </div>
         <Link
-          href="/account-setup"
+          href="/dashboard/settings"
           className="mt-5 inline-flex rounded-full border border-slate-300 px-4 py-2 text-sm font-semibold"
         >
-          Update contact details
+          Manage notification preferences
         </Link>
       </section>
     </div>

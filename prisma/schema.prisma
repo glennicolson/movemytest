@@ -26,6 +26,13 @@ model LearnerAccount {
   marketingConsentAt            DateTime?
   emailVerifiedAt               DateTime?
   lastLoginAt                   DateTime?
+  // Phase 8.4 (2026-06-07): hard STOP-reply opt-out fields. Mirrors
+  // DTC's LearnerProfile.smsOptOutAt gate. The SMS queue blocks
+  // sending to any account where smsOptOutAt is set, regardless of
+  // mobileContactConsentAt.
+  smsOptOutAt                   DateTime?
+  smsOptOutReason               String?                          // "STOP" / "UNSUBSCRIBE" / "CANCEL"
+  lastOptOutAt                  DateTime?
   resetToken                    String?
   resetTokenExpiresAt           DateTime?
   createdAt                     DateTime                         @default(now())

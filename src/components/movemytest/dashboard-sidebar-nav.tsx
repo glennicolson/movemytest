@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { Activity, BellRing, CheckCircle2, Clock, ExternalLink, FileText, Heart, MapPin, Phone, Shield } from "lucide-react";
+import { Activity, BellRing, CheckCircle2, Clock, ExternalLink, FileText, Heart, MapPin, Phone, Settings, Shield } from "lucide-react";
 
 type NavItem = {
   href: string;
@@ -24,6 +24,7 @@ const swapMenu: NavItem[] = [
 
 const accountMenu: NavItem[] = [
   { href: "/dashboard/history", label: "Swap History", icon: FileText },
+  { href: "/dashboard/settings", label: "Notifications", icon: Settings },
   { href: "/dashboard/account", label: "Account", icon: Shield },
   { href: "/dashboard/support", label: "Support", icon: Activity },
   { href: "/ready_to_pass", label: "Ready to Pass", icon: ExternalLink, external: true },

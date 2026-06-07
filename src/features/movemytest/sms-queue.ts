@@ -90,9 +90,14 @@ async function lookupLearnerMobile(accountId: string | null): Promise<string> {
   if (!accountId) return "";
   const account = await prisma.learnerAccount.findUnique({
     where: { id: accountId },
-    select: { mobileNumber: true, mobileContactConsentAt: true },
+    select: { mobileNumber: true, mobileContactConsentAt: true, smsOptOutAt: true },
   });
   if (!account?.mobileNumber || !account?.mobileContactConsentAt) return "";
+  // Phase 8.4 (2026-06-07): hard STOP-reply opt-out gate. Mirrors the
+  // DTC-side pattern. If the learner has texted STOP at any point,
+  // their phone is excluded from the queue regardless of any other
+  // preference. The /dashboard/settings page is where they re-consent.
+  if (account.smsOptOutAt) return "";
   const sanitized = sanitizePhoneNumber(account.mobileNumber);
   if (!sanitized) return "";
   return sanitized;

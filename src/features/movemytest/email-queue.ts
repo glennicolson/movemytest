@@ -8,6 +8,10 @@ import { TRUSTPILOT_BCC } from "@/lib/trustpilot";
 type MoveMyTestEmailQueueKind = "MATCH_FOUND" | "MATCH_ACCEPTANCE_REMINDER" | "MATCH_FINAL_WARNING" | "SWAP_INCOMPLETE_REMINDER" | "SWAP_COMPLETED_NOT_CLOSED" | "INSTRUCTOR_INVITE" | "SWAP_COMPLETED_CONFIRMATION" | "MATCH_DECLINED";
 
 const TRUSTPILOT_REVIEW_URL = "https://uk.trustpilot.com/review/movemytest.co.uk";
+// Phase 8.4 (2026-06-07): used in the email footer opt-out link. The
+// settings page will exist by the time this email goes out (it's in
+// the same commit).
+const PUBLIC_BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || "https://movemytest.co.uk";
 
 interface EmailQueueRow {
   id: string;
@@ -221,7 +225,10 @@ MoveMyTest Team`;
 }
 
 function htmlBody(body: string) {
-  return `<html><body style="font-family:sans-serif;max-width:580px;margin:0 auto;padding:20px;color:#1e293b;line-height:1.6;"><main style="background:#fff;border:1px solid #e2e8f0;border-radius:16px;padding:24px;">${body.replace(/\n{2}/g, '</p><p style="margin:0 0 12px 0;">').replace(/\n/g, '<br>')}</p></main><footer style="margin-top:16px;font-size:12px;color:#94a3b8;"><p>This is an automated message from MoveMyTest. Reply to support@movemytest.co.uk for help.</p></footer></body></html>`;
+  // Phase 8.4 (2026-06-07): added an opt-out link in the footer so
+  // recipients have a one-tap way to manage their preferences
+  // (PECR / GDPR requirement for non-transactional email).
+  return `<html><body style="font-family:sans-serif;max-width:580px;margin:0 auto;padding:20px;color:#1e293b;line-height:1.6;"><main style="background:#fff;border:1px solid #e2e8f0;border-radius:16px;padding:24px;">${body.replace(/\n{2}/g, '</p><p style="margin:0 0 12px 0;">').replace(/\n/g, '<br>')}</p></main><footer style="margin-top:16px;font-size:12px;color:#94a3b8;"><p>This is an automated message from MoveMyTest. Reply to support@movemytest.co.uk for help.</p><p style="margin-top:8px;">Don't want these emails? <a href="${PUBLIC_BASE_URL}/dashboard/settings" style="color:#0284c7;">Manage your notification preferences</a>.</p></footer></body></html>`;
 }
 
 function formatRemaining(expiresAt: Date | null, now: Date) {
@@ -332,7 +339,20 @@ export async function sendQueuedMoveMyTestEmailsAction(matchId?: string) {
 
       const body = bodyForKind(item.kind as MoveMyTestEmailQueueKind, remaining, swapContext);
       const subject = subjectForKind(item.kind as MoveMyTestEmailQueueKind);
-      await mailer().sendMail({ from: fromAddress(), to: item.recipient, bcc: TRUSTPILOT_BCC, subject, html: htmlBody(body) });
+      // Phase 8.4 (2026-06-07): List-Unsubscribe header so email clients
+      // (Gmail, Outlook, etc.) show a one-click "Unsubscribe" link. Per
+      // RFC 8058, this is the standard way to provide a one-click opt-out.
+      await mailer().sendMail({
+        from: fromAddress(),
+        to: item.recipient,
+        bcc: TRUSTPILOT_BCC,
+        subject,
+        html: htmlBody(body),
+        headers: {
+          "List-Unsubscribe": `<${PUBLIC_BASE_URL}/dashboard/settings>`,
+          "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
+        },
+      });
       await (prisma as any).$executeRawUnsafe(
         "UPDATE `EmailQueue` SET status = 'SENT', sentAt = ?, updatedAt = ? WHERE id = ?",
         now.toISOString(), now.toISOString(), item.id,
