@@ -62,10 +62,10 @@ function smsBodyForKind(
 
   switch (kind) {
     case "MATCH_FOUND":
-      return `MoveMyTest — Match found! ${swapContext?.fromCentre ?? "Your test"} ↔ ${swapContext?.toCentre ?? "their test"}. Accept in 2 business days: ${shortUrl}`;
+      return `MoveMyTest — Match found! ${swapContext?.fromCentre?.trim() || "Your test"} ↔ ${swapContext?.toCentre?.trim() || "their test"}. Accept in 2 business days: ${shortUrl}`;
 
     case "MATCH_ACCEPTANCE_REMINDER":
-      return `MoveMyTest reminder: Match expires soon. ${swapContext?.fromCentre ?? "Your swap"} has ${remaining ?? "limited time"} left. Review: ${shortUrl}`;
+      return `MoveMyTest reminder: Match expires soon. ${swapContext?.fromCentre?.trim() || "Your swap"} has ${remaining ?? "limited time"} left. Review: ${shortUrl}`;
 
     case "MATCH_FINAL_WARNING":
       return `FINAL WARNING: Your MoveMyTest match expires in ${remaining ?? "hours"}. Last chance: ${shortUrl}`;
@@ -77,10 +77,10 @@ function smsBodyForKind(
       return `Your swap partner has marked complete. You still need to mark it: ${shortUrl}`;
 
     case "SWAP_COMPLETED_CONFIRMATION":
-      return `MoveMyTest — Your swap is confirmed! ${swapContext?.fromCentre ?? ""} → ${swapContext?.toCentre ?? ""}. Thanks for using MoveMyTest!`;
+      return `MoveMyTest — Your swap is confirmed! ${swapContext?.fromCentre?.trim() || "Your test"} → ${swapContext?.toCentre?.trim() || "their test"}. Thanks for using MoveMyTest!`;
 
     case "MATCH_DECLINED":
-      return `MoveMyTest — Your match for ${swapContext?.fromCentre ?? "your test"} has been declined. Your listing is still active.`;
+      return `MoveMyTest — Your match for ${swapContext?.fromCentre?.trim() || "your test"} has been declined. Your listing is still active.`;
 
     default:
       return "MoveMyTest update. Check your dashboard for details.";
@@ -215,9 +215,12 @@ export async function processDueSms(): Promise<{ sent: number; skipped: number; 
           },
         });
         if (!match) continue;
-        const isRecipientA =
-          (await lookupLearnerMobile(match.listingA.accountId)) === item.recipient;
-        if (isRecipientA) {
+        // Always set swapContext from the match record — don't depend on
+        // isRecipientA being correct. The recipient side-detection was a
+        // premature optimization that produced 'Your test ↔ their test'
+        // placeholders in cross-platform matches. Both sides of any match
+        // need the same info: their centre + the other party's centre.
+        if (match.listingA?.currentCentre?.name && match.listingB?.currentCentre?.name) {
           swapContext = {
             fromCentre: match.listingA.currentCentre.name,
             fromDateTime: new Date(match.listingA.currentDateTime).toLocaleString("en-GB", {
@@ -227,22 +230,6 @@ export async function processDueSms(): Promise<{ sent: number; skipped: number; 
             }),
             toCentre: match.listingB.currentCentre.name,
             toDateTime: new Date(match.listingB.currentDateTime).toLocaleString("en-GB", {
-              dateStyle: "medium",
-              timeStyle: "short",
-              timeZone: "Europe/London",
-            }),
-            matchId: match.id,
-          };
-        } else if (match) {
-          swapContext = {
-            fromCentre: match.listingB.currentCentre.name,
-            fromDateTime: new Date(match.listingB.currentDateTime).toLocaleString("en-GB", {
-              dateStyle: "medium",
-              timeStyle: "short",
-              timeZone: "Europe/London",
-            }),
-            toCentre: match.listingA.currentCentre.name,
-            toDateTime: new Date(match.listingA.currentDateTime).toLocaleString("en-GB", {
               dateStyle: "medium",
               timeStyle: "short",
               timeZone: "Europe/London",
