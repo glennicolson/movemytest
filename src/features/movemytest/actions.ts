@@ -97,6 +97,10 @@ export async function createPotentialMatchesForListing(listingId: string) {
       await scheduleMatchProposedEmails(newMatch.id);
       await scheduleMatchProposedSms(newMatch.id);
       await sendQueuedMoveMyTestEmailsAction(newMatch.id);
+      // Bug fix 2026-06-08: SMS worker was never invoked. Drain the SMS
+      // queue here so the MATCH_FOUND text actually reaches the two parties.
+      // Mirrors the sendQueuedMoveMyTestEmailsAction call above.
+      await sendQueuedSmsAction(newMatch.id);
 
       const listingIsDtc = listing.source === "DTC";
       const candidateIsDtc = candidate.source === "DTC";
@@ -550,6 +554,10 @@ export async function completeMoveMyTestMatchAction(formData: FormData) {
   if (queuedEmails > 0) {
     await sendQueuedMoveMyTestEmailsAction(match.id);
   }
+  // Bug fix 2026-06-08: drain the SMS queue after scheduling. Without this,
+  // the SWAP_COMPLETED_CONFIRMATION text would sit in SmsQueue forever and
+  // never reach the learner. See the parallel call in match creation above.
+  await sendQueuedSmsAction(match.id);
   redirect(`${TEST_SWAP_BASE_PATH}/support-us?donation=swap-complete` as never);
 }
 

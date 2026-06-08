@@ -1,5 +1,51 @@
 # MoveMyTest Tasks
 
+## TODAY (2026-06-08) — MMT
+
+Multiple fixes landed in this session. Verified on live by Glen where applicable.
+
+### Status-conditional banner fix — verified on live
+- [x] MMT `/dashboard/what-to-expect` no longer shows hardcoded "Your listing is live" for any status. Commit `a4f1c81` of MMT repo. Banner now shows different copy per `listing.status`:
+  - ACTIVE → "Your listing is live" (green)
+  - PAUSED → "Your listing is paused" (amber)
+  - MATCHED → "You have an active match" (blue)
+  - COMPLETED → "Your last swap is complete" (slate)
+  - EXPIRED → "Your listing has expired" (amber)
+  - DELETED → no banner
+  Glen reloaded live at 16:16 BST and confirmed.
+
+### Live fixes (DB-side, ran via phpMyAdmin on `u385361430_movedata`)
+- [x] 08:30 BST — Added 3 `LearnerAccount` columns: `smsOptOutAt`, `smsOptOutReason`, `lastOptOutAt`. Created `_prisma_migrations` table.
+- [x] 14:43 BST — Added 3 DTC bridge columns: `LearnerAccount.crmUserId`, `InstructorAccount.crmInstructorProfileId`, `LearnerInvite.invitedByUserId`. Added 2 unique indexes.
+
+### Data cleanup (dev DB, `localhost`-guarded script)
+- [x] 09:15 BST — Cleaned 478 bad datetime rows across 31 columns on MMT dev DB using `scripts/fix-bad-datetimes.mjs`.
+
+### Code fixes (commits pushed to MMT origin/main)
+- [x] `dedb305` — CSP fix (dev + prod, Typekit + Google Analytics), favicon refresh, `site.webmanifest` MMT branding, queue worker `now.toISOString()` → Date object, `.env.example` template, 2 dev utility scripts, .gitignore sensitive-scratch exclusion
+- [x] `5a689c7` — Added `@types/qrcode` dev dep for type safety on QRCode API
+- [x] `6e099ca` — Removed orphan marketing `site-header-client.tsx` + `site-header.tsx` (missing `framer-motion` dep); kept `nav-data.ts` with inlined `NavItem` type
+- [x] `4138f3f` — Removed 8 orphan `ui/*.tsx` files (including `virtual-data-table.tsx`, missing `@tanstack/react-virtual` dep)
+- [x] `33a669d` — Removed orphan `ga-service-account.ts` (missing `@google-analytics/data` dep)
+- [x] `73cd9c9` — Removed orphan `use-query.ts` (missing `@tanstack/react-query` dep)
+- [x] `a4f1c81` — Status-conditional banner fix on `/dashboard/what-to-expect` (MMT equivalent of the DTC one)
+
+### SMS-on-match bug (HIGH, fix needed)
+- [x] 17:11 BST — Diagnosed: `actions.ts:98-100` and `:551-552` queue SMS but never drain it
+- [x] 17:14 BST — 17 of 20 stale SmsQueue rows marked `SKIPPED` via `scripts/skip-stale-sms-queue.mjs`
+- [ ] **APPLY THE FIX**: add `await sendQueuedSmsAction(newMatch.id)` and `await sendQueuedSmsAction(match.id)` next to the email calls (~3 lines)
+- [ ] Update the "lazy processing" comment at `sms-queue.ts:5-9` — either remove it or actually wire a hook to drain the queue on dashboard loads
+- [ ] Glen to decide on 3 PENDING `SWAP_COMPLETED_CONFIRMATION` rows for already-COMPLETED matches (drain / skip / leave)
+
+### Still pending (Next Up)
+- [ ] `/dashboard/edit` status-blind page (same shape of bug, allows editing a COMPLETED listing)
+- [ ] Pre-push schema check tool — 4 drift recurrences today would have been caught by this
+- [ ] 154 pre-existing TypeScript errors (per MMT_SWEEP_2026-06-08.md, some are real bugs)
+- [ ] Two scrypt hash formats unification (`scrypt$<salt>$<hash>` vs `<salt>.<hash>`)
+
+---
+---
+
 ## In Progress
 - [x] DTC → MMT sync tested and working (47 listings synced)
 - [x] Webhook API specification (WEBHOOK_SPEC.md)
