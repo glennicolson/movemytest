@@ -125,8 +125,12 @@ export async function processDueSms(): Promise<{ sent: number; skipped: number; 
   /* eslint-disable @typescript-eslint/no-explicit-any */
   const now = new Date();
 
+  // Defensive fix 2026-06-08 17:32 BST: live Hostinger MySQL had NO_ZERO_DATE
+  // off historically (per scripts/import-live-dump.sh comment), so rows with
+  // updatedAt='0000-00-00' are valid on disk but break strict-mode Prisma reads.
+  // Two guards: explicit column list (not SELECT *), and skip rows with bad updatedAt.
   const pending = await (prisma as any).$queryRawUnsafe(
-    "SELECT * FROM SmsQueue WHERE status = 'PENDING' AND scheduledFor <= ? LIMIT 50",
+    "SELECT id, matchId, kind, recipient, recipientRole, scheduledFor, retryCount, maxRetries, status, sentAt, twilioSid, error FROM SmsQueue WHERE status = 'PENDING' AND scheduledFor <= ? AND updatedAt > '1970-01-01' LIMIT 50",
     now,
   ) as SmsQueueRow[];
 
@@ -139,7 +143,7 @@ export async function processDueSms(): Promise<{ sent: number; skipped: number; 
 
     try {
       const matchResult = await (prisma as any).$queryRawUnsafe(
-        "SELECT status, callWindowExpiresAt FROM \`Match\` WHERE id = ? LIMIT 1",
+        "SELECT status, callWindowExpiresAt FROM `Match` WHERE id = ? AND updatedAt > '1970-01-01' LIMIT 1",
         item.matchId,
       ) as Array<{ status: string; callWindowExpiresAt: string | null }>;
 

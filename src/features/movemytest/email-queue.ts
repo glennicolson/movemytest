@@ -256,12 +256,12 @@ export async function sendQueuedMoveMyTestEmailsAction(matchId?: string) {
   const now = new Date();
   const pending = matchId
     ? await (prisma as any).$queryRawUnsafe(
-        "SELECT * FROM `EmailQueue` WHERE status = 'PENDING' AND scheduledFor <= ? AND matchId = ?",
+        "SELECT id, matchId, kind, scheduledFor, retryCount, maxRetries, status, sentAt, error FROM `EmailQueue` WHERE status = 'PENDING' AND scheduledFor <= ? AND matchId = ? AND updatedAt > '1970-01-01'",
         now,
         matchId,
       ) as EmailQueueRow[]
     : await (prisma as any).$queryRawUnsafe(
-        "SELECT * FROM `EmailQueue` WHERE status = 'PENDING' AND scheduledFor <= ?",
+        "SELECT id, matchId, kind, scheduledFor, retryCount, maxRetries, status, sentAt, error FROM `EmailQueue` WHERE status = 'PENDING' AND scheduledFor <= ? AND updatedAt > '1970-01-01'",
         now,
       ) as EmailQueueRow[];
 
@@ -269,7 +269,7 @@ export async function sendQueuedMoveMyTestEmailsAction(matchId?: string) {
     if ((item.retryCount ?? 0) >= (item.maxRetries ?? 3)) continue;
     try {
       const matchResult = await (prisma as any).$queryRawUnsafe(
-        "SELECT status, callWindowExpiresAt, listingAId, listingBId FROM MoveMyTestMatch WHERE id = ? LIMIT 1",
+        "SELECT status, callWindowExpiresAt, listingAId, listingBId FROM MoveMyTestMatch WHERE id = ? AND updatedAt > '1970-01-01' LIMIT 1",
         item.matchId,
       ) as Array<{ status: string; callWindowExpiresAt: string | null; listingAId: string; listingBId: string }>;
       const matchStatus = matchResult[0]?.status;
