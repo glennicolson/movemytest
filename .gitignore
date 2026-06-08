@@ -19,6 +19,10 @@ dist/
 # Prisma
 prisma/migrations/
 
+# Scratch / debug files that may have sensitive data pasted in
+prisma/seed-data/openclaw
+scripts/scratch/
+
 # Logs
 *.log
 npm-debug.log*

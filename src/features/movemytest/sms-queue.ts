@@ -127,7 +127,7 @@ export async function processDueSms(): Promise<{ sent: number; skipped: number; 
 
   const pending = await (prisma as any).$queryRawUnsafe(
     "SELECT * FROM SmsQueue WHERE status = 'PENDING' AND scheduledFor <= ? LIMIT 50",
-    now.toISOString(),
+    now,
   ) as SmsQueueRow[];
 
   let sent = 0;
@@ -155,7 +155,7 @@ export async function processDueSms(): Promise<{ sent: number; skipped: number; 
       ) {
         await (prisma as any).$executeRawUnsafe(
           "UPDATE SmsQueue SET status = 'SKIPPED', updatedAt = ? WHERE id = ?",
-          now.toISOString(),
+          now,
           item.id,
         );
         skipped++;
@@ -166,7 +166,7 @@ export async function processDueSms(): Promise<{ sent: number; skipped: number; 
       if (item.kind === "MATCH_FOUND" && matchStatus !== "PROPOSED") {
         await (prisma as any).$executeRawUnsafe(
           "UPDATE SmsQueue SET status = 'SKIPPED', updatedAt = ? WHERE id = ?",
-          now.toISOString(),
+          now,
           item.id,
         );
         skipped++;
@@ -177,7 +177,7 @@ export async function processDueSms(): Promise<{ sent: number; skipped: number; 
       if (item.kind === "MATCH_DECLINED" && matchStatus !== "DECLINED") {
         await (prisma as any).$executeRawUnsafe(
           "UPDATE SmsQueue SET status = 'SKIPPED', updatedAt = ? WHERE id = ?",
-          now.toISOString(),
+          now,
           item.id,
         );
         skipped++;
@@ -249,9 +249,9 @@ export async function processDueSms(): Promise<{ sent: number; skipped: number; 
       if (result.success) {
         await (prisma as any).$executeRawUnsafe(
           "UPDATE SmsQueue SET status = 'SENT', sentAt = ?, twilioSid = ?, updatedAt = ? WHERE id = ?",
-          now.toISOString(),
+          now,
           result.sid ?? null,
-          now.toISOString(),
+          now,
           item.id,
         );
         sent++;
@@ -260,7 +260,7 @@ export async function processDueSms(): Promise<{ sent: number; skipped: number; 
           "UPDATE SmsQueue SET retryCount = retryCount + 1, status = ?, error = ?, updatedAt = ? WHERE id = ?",
           (item.retryCount ?? 0) >= 2 ? "FAILED" : "PENDING",
           result.error?.slice(0, 500) ?? "Unknown error",
-          now.toISOString(),
+          now,
           item.id,
         );
         failed++;
@@ -271,7 +271,7 @@ export async function processDueSms(): Promise<{ sent: number; skipped: number; 
         "UPDATE SmsQueue SET retryCount = retryCount + 1, status = ?, error = ?, updatedAt = ? WHERE id = ?",
         (item.retryCount ?? 0) >= 2 ? "FAILED" : "PENDING",
         message.slice(0, 500),
-        now.toISOString(),
+        now,
         item.id,
       );
       failed++;
@@ -333,7 +333,7 @@ export async function scheduleMatchSmsQueue(matchId: string, now = new Date()) {
       entry.kind,
       entry.recipient,
       entry.recipientRole,
-      entry.scheduledFor.toISOString(),
+      entry.scheduledFor,
     );
   }
   /* eslint-enable @typescript-eslint/no-explicit-any */
@@ -391,7 +391,7 @@ export async function scheduleMatchProposedSms(matchId: string, now = new Date()
       entry.kind,
       entry.recipient,
       entry.recipientRole,
-      entry.scheduledFor.toISOString(),
+      entry.scheduledFor,
     );
   }
   /* eslint-enable @typescript-eslint/no-explicit-any */

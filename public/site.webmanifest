@@ -1,11 +1,11 @@
 {
-  "name": "The DTC",
-  "short_name": "The DTC",
-  "description": "The Driver Training Centre — professional driving lessons across Edinburgh, The Lothians, Dumfries and surrounding areas.",
+  "name": "MoveMyTest",
+  "short_name": "MoveMyTest",
+  "description": "MoveMyTest — swap your UK driving test slot with another learner. Faster than waiting, easier than calling DVSA.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
-  "theme_color": "#c62828",
+  "theme_color": "#0056B3",
   "icons": [
     {
       "src": "/android-chrome-192x192.png",

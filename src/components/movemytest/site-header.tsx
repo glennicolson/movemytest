@@ -22,13 +22,20 @@ export function SiteHeader() {
       <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6">
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2">
-          <Image
-            src="/movemytest-logo.png"
-            alt="MoveMyTest"
-            width={160}
-            height={48}
-            className="h-auto w-[140px] sm:w-[160px]"
-          />
+          <div className="relative h-10 w-[140px] sm:h-12 sm:w-[160px]">
+            <Image
+              src="/movemytest-logo.png"
+              alt="MoveMyTest"
+              fill
+              // Logo is the LCP element above the fold; mark it priority so
+              // Next.js preloads it (improves LCP metric). `fill` mode makes
+              // the image scale to its parent div; the parent is sized by
+              // Tailwind classes so no inline style override is needed.
+              priority
+              sizes="(min-width: 640px) 160px, 140px"
+              className="object-contain"
+            />
+          </div>
         </Link>
 
         {/* Desktop nav */}

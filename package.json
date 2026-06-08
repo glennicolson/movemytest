@@ -46,6 +46,7 @@
     "@types/nodemailer": "^8.0.0",
     "@types/react": "^19.1.0",
     "@types/react-dom": "^19.1.0",
+    "mysql2": "^3.22.5",
     "typescript": "^5.8.0"
   }
 }

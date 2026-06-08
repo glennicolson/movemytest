@@ -257,12 +257,12 @@ export async function sendQueuedMoveMyTestEmailsAction(matchId?: string) {
   const pending = matchId
     ? await (prisma as any).$queryRawUnsafe(
         "SELECT * FROM `EmailQueue` WHERE status = 'PENDING' AND scheduledFor <= ? AND matchId = ?",
-        now.toISOString(),
+        now,
         matchId,
       ) as EmailQueueRow[]
     : await (prisma as any).$queryRawUnsafe(
         "SELECT * FROM `EmailQueue` WHERE status = 'PENDING' AND scheduledFor <= ?",
-        now.toISOString(),
+        now,
       ) as EmailQueueRow[];
 
   for (const item of pending) {
@@ -278,7 +278,7 @@ export async function sendQueuedMoveMyTestEmailsAction(matchId?: string) {
       if ((item.kind === "SWAP_INCOMPLETE_REMINDER" || item.kind === "SWAP_COMPLETED_NOT_CLOSED" || item.kind === "MATCH_ACCEPTANCE_REMINDER" || item.kind === "MATCH_FINAL_WARNING") && ["COMPLETED", "EXPIRED"].includes(matchStatus ?? "")) {
         await (prisma as any).$executeRawUnsafe(
           "UPDATE `EmailQueue` SET status = 'SKIPPED', updatedAt = ? WHERE id = ?",
-          now.toISOString(),
+          now,
           item.id,
         );
         continue;
@@ -288,7 +288,7 @@ export async function sendQueuedMoveMyTestEmailsAction(matchId?: string) {
       if (item.kind === "MATCH_FOUND" && matchStatus !== "PROPOSED") {
         await (prisma as any).$executeRawUnsafe(
           "UPDATE `EmailQueue` SET status = 'SKIPPED', updatedAt = ? WHERE id = ?",
-          now.toISOString(),
+          now,
           item.id,
         );
         continue;
@@ -298,7 +298,7 @@ export async function sendQueuedMoveMyTestEmailsAction(matchId?: string) {
       if (item.kind === "MATCH_DECLINED" && matchStatus !== "DECLINED") {
         await (prisma as any).$executeRawUnsafe(
           "UPDATE `EmailQueue` SET status = 'SKIPPED', updatedAt = ? WHERE id = ?",
-          now.toISOString(),
+          now,
           item.id,
         );
         continue;
@@ -355,7 +355,7 @@ export async function sendQueuedMoveMyTestEmailsAction(matchId?: string) {
       });
       await (prisma as any).$executeRawUnsafe(
         "UPDATE `EmailQueue` SET status = 'SENT', sentAt = ?, updatedAt = ? WHERE id = ?",
-        now.toISOString(), now.toISOString(), item.id,
+        now, now, item.id,
       );
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
@@ -363,7 +363,7 @@ export async function sendQueuedMoveMyTestEmailsAction(matchId?: string) {
         "UPDATE `EmailQueue` SET retryCount = retryCount + 1, status = ?, error = ?, updatedAt = ? WHERE id = ?",
         (item.retryCount ?? 0) >= 2 ? "FAILED" : "PENDING",
         message.slice(0, 500),
-        now.toISOString(),
+        now,
         item.id,
       );
     }
@@ -425,7 +425,7 @@ export async function scheduleMatchEmailQueue(matchId: string, now = new Date())
       email.kind,
       email.recipient,
       email.recipientRole,
-      email.scheduledFor.toISOString(),
+      email.scheduledFor,
     );
   }
   /* eslint-enable @typescript-eslint/no-explicit-any */
@@ -479,7 +479,7 @@ export async function scheduleMatchProposedEmails(matchId: string, now = new Dat
       email.kind,
       email.recipient,
       email.recipientRole,
-      email.scheduledFor.toISOString(),
+      email.scheduledFor,
     );
   }
   /* eslint-enable @typescript-eslint/no-explicit-any */
