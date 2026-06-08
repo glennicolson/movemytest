@@ -58,9 +58,9 @@ function loadGoogleAnalytics(): Promise<boolean> {
     }
 
     // Initialise dataLayer and gtag function first
-    window.dataLayer = window.dataLayer || [];
+    window.dataLayer = window.dataLayer ?? [];
     window.gtag = function (...args: any[]) {
-      window.dataLayer.push(args);
+      (window.dataLayer ?? (window.dataLayer = [])).push(args);
     };
 
     // Set default consent to denied
@@ -230,10 +230,15 @@ export function CookieConsentBanner() {
 }
 
 // ── GLOBAL TYPE EXTENSION ──
+// These MUST match the declarations in
+// src/lib/cookies/consent-provider.tsx and
+// src/components/marketing/google-analytics.tsx. TS doesn't
+// allow merging interface Window with conflicting types, so we
+// keep them all aligned on `unknown[]` (more type-safe than `any[]`).
 declare global {
   interface Window {
-    gtag?: (...args: any[]) => void;
-    dataLayer?: any[];
+    gtag?: (...args: unknown[]) => void;
+    dataLayer?: unknown[];
     __gaLoaded?: boolean;
   }
 }

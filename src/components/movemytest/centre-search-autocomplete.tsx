@@ -7,7 +7,9 @@ export type CentreSearchItem = {
   id: string;
   slug: string;
   displayName: string;
-  region: string;
+  // The MMT TestCentre schema has region as nullable; the search UI
+  // tolerates null by using an empty string in the rendered output.
+  region: string | null;
   postcode: string | null;
 };
 

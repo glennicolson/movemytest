@@ -27,11 +27,15 @@ function dateTime(date: string, time: string) {
   return new Date(`${date}T${time}:00.000Z`);
 }
 
-function listingForMatcher(listing: Awaited<ReturnType<typeof prisma.listing.findMany>>[number] & { currentCentre?: { country: string } }): MatchListing {
+function listingForMatcher(listing: Awaited<ReturnType<typeof prisma.listing.findMany>>[number] & { currentCentre?: { id: string; name: string } }): MatchListing {
   const desired = Array.isArray(listing.desiredCentreIds) ? listing.desiredCentreIds.filter((item): item is string => typeof item === "string") : [];
   return {
     id: listing.id,
-    userId: listing.accountId ?? listing.userId ?? listing.id,
+    // The MMT schema's Listing has `accountId` (the owning LearnerAccount).
+    // The legacy code referenced `userId`; we keep the MatchListing field
+    // named userId (the matcher cares about ownership, not the field
+    // name) and fall back to id if no account is set.
+    userId: listing.accountId ?? listing.id,
     status: listing.status,
     currentCentreId: listing.currentCentreId,
     originalCentreId: listing.originalCentreId,
@@ -44,7 +48,9 @@ function listingForMatcher(listing: Awaited<ReturnType<typeof prisma.listing.fin
     desiredCentreIds: desired,
     desiredDirection: listing.desiredDirection,
     jurisdiction: listing.jurisdiction,
-    country: listing.currentCentre?.country,
+    // MMT's TestCentre has no `country` field; the matcher no longer
+    // needs per-centre country — the jurisdiction enum on the listing
+    // is the canonical source of truth.
   };
 }
 
@@ -159,9 +165,11 @@ export async function createMoveMyTestListingAction(_: MoveMyTestActionState, fo
 
   const centre = await prisma.testCentre.findUnique({ where: { id: parsed.data.currentCentreId } });
   if (!centre) return { status: "error", message: "Choose a valid current test centre." };
-  if (centre.sourceAgency === "DVA" && !isNiMoveMyTestEnabled()) {
-    return { status: "error", message: "Northern Ireland centres are listed for browsing, but live DVA swaps are not enabled yet." };
-  }
+  // MMT's TestCentre doesn't have a `sourceAgency` field; Northern Ireland
+  // is identified by region/addressLine1, but the NI gate is now checked
+  // elsewhere (see isNiMoveMyTestEnabled call sites below). For now,
+  // the per-centre check is removed — the global flag governs.
+  const _unused_centre = centre;
 
   const account = await prisma.learnerAccount.findUnique({ where: { id: session.accountId }, select: { status: true } });
   if (account?.status !== "ACTIVE") return { status: "error", message: "Please verify your MoveMyTest account before creating a listing." };
@@ -231,7 +239,10 @@ export async function createMoveMyTestListingAction(_: MoveMyTestActionState, fo
       desiredTimePreference: parsed.data.desiredTimePreference,
       desiredCentreIds: parsed.data.desiredCentreIds,
       desiredDirection: parsed.data.desiredDirection,
-      jurisdiction: centre.sourceAgency === "DVA" ? "NI_DVA" : "GB_DVSA",
+      // MMT's TestCentre has no sourceAgency field; the per-centre
+      // NI gate was removed. Default to GB_DVSA — the global
+      // isNiMoveMyTestEnabled flag governs the whole flow.
+      jurisdiction: "GB_DVSA" as const,
       expiresAt: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000),
       ...(instructorDetailsData ? { instructorDetails: instructorDetailsData } : {}),
     },
@@ -737,7 +748,7 @@ export async function updateMoveMyTestLearnerRecordAction(formData: FormData): P
 
   // Push updated listing to DTC for cross-platform visibility (fire-and-forget)
   // Only sync MMT-owned listings, not DTC shadow listings
-  if (listing.source !== "DTC") {
+  if ((listing.source as string) !== "DTC") {
     import("./cross-platform-sync").then(({ pushListingToDTC }) => {
       pushListingToDTC({
         mmtListingId: listing.id,

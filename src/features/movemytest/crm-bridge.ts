@@ -6,6 +6,13 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { prisma } from "@/lib/db/prisma";
+import {
+  findDtcInstructorProfileByAdi,
+  findDtcInstructorProfileById,
+  findDtcInstructorProfileByUserId,
+  findDtcUserByEmail,
+  findDtcUserById,
+} from "@/lib/db/dtc-bridge";
 import { requirePermission } from "@/lib/auth/guards";
 import { getMailboxConfig } from "@/lib/communications/config";
 import { appConfig } from "@/lib/config/app";
@@ -76,7 +83,8 @@ export async function getPendingLearnerInviteForToken(token?: string | null) {
 }
 
 export async function ensuremovemytestAccountForCrmUser(userId: string) {
-  const user = await prisma.user.findUniqueOrThrow({ where: { id: userId }, include: { learnerProfile: true } });
+  const user = await findDtcUserById(userId, { includeLearnerProfile: true });
+  if (!user) throw new Error(`DTC user ${userId} not found.`);
   const existingByCrm = await prisma.learnerAccount.findUnique({ where: { crmUserId: user.id } });
   if (existingByCrm) return existingByCrm;
 
@@ -86,16 +94,21 @@ export async function ensuremovemytestAccountForCrmUser(userId: string) {
   }
 
   const now = new Date();
+  // The DTC user may have a `phone` field directly, or one nested in
+  // `learnerProfile.homePhone` (the DTC schema has it both ways
+  // depending on version). We accept either.
+  const phoneFromLearnerProfile = (user.learnerProfile as { homePhone?: string } | undefined)?.homePhone;
+  const phoneFromUser = typeof user.phone === "string" ? user.phone : undefined;
   const account = await prisma.learnerAccount.create({
     data: {
       crmUserId: user.id,
       email: user.email,
-      mobileNumber: user.phone ?? user.learnerProfile?.homePhone ?? null,
+      mobileNumber: phoneFromUser ?? phoneFromLearnerProfile ?? null,
       passwordHash: await hashPassword(bridgePasswordSeed()),
       termsAcceptedAt: now,
       privacyAcceptedAt: now,
       officialProcessAcknowledgedAt: now,
-      accountSetupCompletedAt: user.phone || user.learnerProfile?.homePhone ? now : null,
+      accountSetupCompletedAt: phoneFromUser || phoneFromLearnerProfile ? now : null,
       emailVerifiedAt: now,
       lastLoginAt: now,
     },
@@ -109,7 +122,9 @@ export async function ensuremovemytestAccountForCrmUser(userId: string) {
 }
 
 export async function ensureinstructorAccountForCrmInstructor(instructorProfileId: string) {
-  const instructor = await prisma.instructorProfile.findUniqueOrThrow({ where: { id: instructorProfileId }, include: { user: true } });
+  const instructor = await findDtcInstructorProfileById(instructorProfileId);
+  if (!instructor) throw new Error(`DTC instructor profile ${instructorProfileId} not found.`);
+  if (!instructor.user) throw new Error(`DTC instructor profile ${instructorProfileId} has no linked user.`);
   const adiNumber = normalizeAdiNumber(instructor.adiNumber);
   if (!adiNumber) throw new Error("Instructor ADI number is required before linking MoveMyTest.");
 
@@ -130,10 +145,10 @@ export async function ensureinstructorAccountForCrmInstructor(instructorProfileI
     data: {
       crmInstructorProfileId: instructor.id,
       adiNumber,
-      firstName: instructor.user.firstName,
-      lastName: instructor.user.lastName,
-      email: instructor.user.email,
-      mobileNumber: instructor.user.phone,
+      firstName: instructor.user.firstName as string,
+      lastName: instructor.user.lastName as string,
+      email: instructor.user.email as string,
+      mobileNumber: (instructor.user as { phone?: string }).phone,
       passwordHash: await hashPassword(bridgePasswordSeed()),
       emailVerifiedAt: new Date(),
       lastLoginAt: new Date(),
@@ -152,11 +167,15 @@ export async function openCrmLearnerMoveMyTestAction() {
 
 export async function openCrmInstructorMoveMyTestAction() {
   const session = await requirePermission("instructorWorkspace");
-  const instructor = await prisma.instructorProfile.findFirstOrThrow({ where: { user: { email: session.email } } });
-  const adiNumber = normalizeAdiNumber(instructor.adiNumber);
+  // Resolve the DTC instructor via the session userId. The session
+  // comes from DTC's auth, so its userId matches a DTC User, which
+  // has a 1:1 relation with an InstructorProfile.
+  const dtcInstructor = await findDtcInstructorProfileByUserId(session.userId);
+  if (!dtcInstructor) redirect("/instructor/dashboard?movemytestInvite=missing-profile#movemytest" as never);
+  const adiNumber = normalizeAdiNumber(dtcInstructor.adiNumber);
   if (!adiNumber) redirect("/instructor/dashboard?movemytestInvite=missing-adi#movemytest" as never);
 
-  const account = await ensureinstructorAccountForCrmInstructor(instructor.id);
+  const account = await ensureinstructorAccountForCrmInstructor(dtcInstructor.id);
   await createMoveMyTestInstructorSession(account);
   redirect("/instructor/dashboard" as never);
 }
@@ -169,8 +188,12 @@ const learnerInviteSchema = z.object({
 
 export async function inviteNonDtcLearnerToMoveMyTestAction(formData: FormData) {
   const session = await requirePermission("instructorWorkspace");
-  const instructor = await prisma.instructorProfile.findFirstOrThrow({ where: { user: { email: session.email } }, include: { user: true } });
-  const adiNumber = normalizeAdiNumber(instructor.adiNumber);
+  // Find the DTC instructor profile via the session email. The session
+  // email corresponds to a DTC User, which has a 1:1 relation with
+  // an InstructorProfile (in the DTC schema).
+  const dtcInstructor = await (await import("@/lib/db/dtc-bridge")).findDtcInstructorProfileByUserId(session.userId);
+  if (!dtcInstructor) redirect("/instructor/dashboard?movemytestInvite=missing-profile#movemytest" as never);
+  const adiNumber = normalizeAdiNumber(dtcInstructor.adiNumber);
   if (!adiNumber) redirect("/instructor/dashboard?movemytestInvite=missing-adi#movemytest" as never);
 
   const parsed = learnerInviteSchema.safeParse({
@@ -180,7 +203,7 @@ export async function inviteNonDtcLearnerToMoveMyTestAction(formData: FormData) 
   });
   if (!parsed.success) redirect("/instructor/dashboard?movemytestInvite=invalid#movemytest" as never);
 
-  const account = await ensureinstructorAccountForCrmInstructor(instructor.id);
+  const account = await ensureinstructorAccountForCrmInstructor(dtcInstructor.id);
   const existingLearner = await prisma.learnerAccount.findUnique({ where: { email: parsed.data.email } });
 
   const now = new Date();
@@ -189,7 +212,7 @@ export async function inviteNonDtcLearnerToMoveMyTestAction(formData: FormData) 
   const invite = await prisma.learnerInvite.create({
     data: {
       invitedByUserId: session.userId,
-      invitedByInstructorProfileId: instructor.id,
+      invitedByInstructorProfileId: dtcInstructor.id,
       invitedByInstructorAccountId: account.id,
       claimedByAccountId: existingLearner?.id ?? null,
       learnerName: parsed.data.learnerName?.trim() || null,
@@ -207,7 +230,7 @@ export async function inviteNonDtcLearnerToMoveMyTestAction(formData: FormData) 
       await sendLearnerInviteEmail({
         to: parsed.data.email,
         learnerName: parsed.data.learnerName?.trim() || null,
-        instructorName: `${instructor.user.firstName} ${instructor.user.lastName}`.trim() || "Your instructor",
+        instructorName: `${(dtcInstructor.user as { firstName?: string } | null)?.firstName ?? ""} ${(dtcInstructor.user as { lastName?: string } | null)?.lastName ?? ""}`.trim() || "Your instructor",
         inviteUrl,
       });
       await prisma.learnerInvite.update({ where: { id: invite.id }, data: { status: "SENT", inviteSentAt: new Date(), inviteError: null } });

@@ -2,8 +2,8 @@ import { prisma } from "@/lib/db/prisma";
 import { hasMatchExpired } from "./business-days";
 import { aggregatePassRates, getCentreLocality, getPassRateForCentre, REGION_DISPLAY_META } from "./locality";
 
-function enrichCentre<T extends { id: string; name: string; slug: string; region: string; postcode: string | null; activeSwapCount?: number; addressLine1?: string | null; latitude?: number | null; longitude?: number | null }>(centre: T) {
-  const locality = getCentreLocality(centre.name, centre.region);
+function enrichCentre<T extends { id: string; name: string; slug: string; region: string | null; postcode: string | null; activeSwapCount?: number; addressLine1?: string | null; latitude?: number | null; longitude?: number | null }>(centre: T) {
+  const locality = getCentreLocality(centre.name, centre.region ?? "Unknown");
   const passRate = getPassRateForCentre(centre.slug, centre.name);
   return { ...centre, locality, passRate };
 }

@@ -1,23 +1,9 @@
-import { getNavigation } from "@/features/marketing-content/queries";
 import { SiteHeaderClient } from "./site-header-client";
+import { HEADER_NAV_ITEMS } from "./nav-data";
 
 export async function SiteHeader() {
-  const navItems = await getNavigation("HEADER");
-
-  const items = navItems.map((item: any) => ({
-    title: item.label,
-    href: item.href,
-    openInNewTab: item.openInNewTab,
-    description: item.description ?? undefined,
-    icon: item.icon ?? undefined,
-    children: item.children?.map((child: any) => ({
-      title: child.label,
-      href: child.href,
-      openInNewTab: child.openInNewTab,
-      description: child.description ?? undefined,
-      icon: child.icon ?? undefined,
-    })) ?? [],
-  }));
-
+  // Nav items are now hardcoded — the previous getNavigation() call
+  // hit a non-existent Prisma model and silently returned empty.
+  const items = HEADER_NAV_ITEMS;
   return <SiteHeaderClient items={items} />;
 }

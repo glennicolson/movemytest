@@ -95,11 +95,3 @@ export function safeCompareBackupCode(input: string, expectedHash: string) {
   return inputHash.length === storedHash.length && timingSafeEqual(inputHash, storedHash);
 }
 
-/** Check whether a user has any active MFA factor (TOTP or WebAuthn). */
-export async function userHasActiveMfa(userId: string): Promise<boolean> {
-  const { prisma } = await import("@/lib/db/prisma");
-  const count = await prisma.mfaFactor.count({
-    where: { userId, status: "ACTIVE" },
-  });
-  return count > 0;
-}

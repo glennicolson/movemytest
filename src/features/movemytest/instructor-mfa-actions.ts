@@ -57,10 +57,10 @@ export async function confirmInstructorTotpSetupAction(_prevState: MfaVerifyActi
 
   const backupCodes = generateBackupCodes();
   await prisma.$transaction(async (tx) => {
-    await tx.movemytestInstructorMfaFactor.updateMany({ where: { accountId: session.instructorId, method: "TOTP", status: "ACTIVE" }, data: { isPrimary: false } });
-    await tx.movemytestInstructorMfaFactor.update({ where: { id: pendingFactor.id }, data: { status: "ACTIVE", isPrimary: true, activatedAt: new Date() } });
-    await tx.movemytestInstructorBackupCode.deleteMany({ where: { accountId: session.instructorId } });
-    await tx.movemytestInstructorBackupCode.createMany({ data: backupCodes.map((code) => ({ accountId: session.instructorId, codeHash: hashBackupCode(code) })) });
+    await tx.instructorMfaFactor.updateMany({ where: { accountId: session.instructorId, method: "TOTP", status: "ACTIVE" }, data: { isPrimary: false } });
+    await tx.instructorMfaFactor.update({ where: { id: pendingFactor.id }, data: { status: "ACTIVE", isPrimary: true, activatedAt: new Date() } });
+    await tx.instructorBackupCode.deleteMany({ where: { accountId: session.instructorId } });
+    await tx.instructorBackupCode.createMany({ data: backupCodes.map((code) => ({ accountId: session.instructorId, codeHash: hashBackupCode(code) })) });
   });
 
   return { status: "success", message: "TOTP MFA is now active. Save these backup codes somewhere safe before you leave this page.", backupCodes, hasActiveTotp: true, activeFactorLabel: pendingFactor.label };
@@ -77,8 +77,8 @@ export async function regenerateInstructorBackupCodesAction(_prevState: MfaSetup
 
   const backupCodes = generateBackupCodes();
   await prisma.$transaction(async (tx) => {
-    await tx.movemytestInstructorBackupCode.deleteMany({ where: { accountId: session.instructorId } });
-    await tx.movemytestInstructorBackupCode.createMany({ data: backupCodes.map((code) => ({ accountId: session.instructorId, codeHash: hashBackupCode(code) })) });
+    await tx.instructorBackupCode.deleteMany({ where: { accountId: session.instructorId } });
+    await tx.instructorBackupCode.createMany({ data: backupCodes.map((code) => ({ accountId: session.instructorId, codeHash: hashBackupCode(code) })) });
   });
 
   return { status: "success", message: "Backup codes regenerated. Replace any copies you stored before.", backupCodes, hasActiveTotp: true, activeFactorLabel: activeFactor.label };
@@ -94,8 +94,8 @@ export async function disableInstructorTotpAction(_prevState: MfaSetupActionStat
   if (!activeFactor) return { status: "error", message: "No active TOTP factor to disable.", hasActiveTotp: false };
 
   await prisma.$transaction(async (tx) => {
-    await tx.movemytestInstructorMfaFactor.update({ where: { id: activeFactor.id }, data: { status: "DISABLED", isPrimary: false } });
-    await tx.movemytestInstructorBackupCode.deleteMany({ where: { accountId: session.instructorId } });
+    await tx.instructorMfaFactor.update({ where: { id: activeFactor.id }, data: { status: "DISABLED", isPrimary: false } });
+    await tx.instructorBackupCode.deleteMany({ where: { accountId: session.instructorId } });
   });
 
   return { status: "success", message: "TOTP MFA has been disabled. Your instructor account now uses password-only sign-in.", hasActiveTotp: false };
@@ -121,10 +121,10 @@ export async function completeInstructorMfaChallengeAction(_prevState: SignInAct
     if (!factor?.totpSecretEncrypted) return { status: "error", error: "No active authenticator factor was found for this account." };
     verified = verifyTotpToken({ secretBase32: decryptMfaSecret(factor.totpSecretEncrypted), token });
   } else if (backupCode) {
-    const codes = await prisma.movemytestInstructorBackupCode.findMany({ where: { accountId: account.id, usedAt: null }, select: { id: true, codeHash: true } });
+    const codes = await prisma.instructorBackupCode.findMany({ where: { accountId: account.id, usedAt: null }, select: { id: true, codeHash: true } });
     const match = codes.find((code) => safeCompareBackupCode(normalizeBackupCode(backupCode), code.codeHash));
     if (match) {
-      await prisma.movemytestInstructorBackupCode.update({ where: { id: match.id }, data: { usedAt: new Date() } });
+      await prisma.instructorBackupCode.update({ where: { id: match.id }, data: { usedAt: new Date() } });
       verified = true;
     }
   }

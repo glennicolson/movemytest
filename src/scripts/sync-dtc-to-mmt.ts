@@ -153,7 +153,7 @@ export async function syncDtcToMmt(config: SyncConfig = { dryRun: false, batchSi
   
   try {
     // Step 1: Fetch all ACTIVE listings from DTC
-    const dtcListings = await dtc.testSwapListing.findMany({
+    const dtcListings = await dtc.listing.findMany({
       where: {
         status: "ACTIVE",
         expiresAt: { gt: new Date() }, // Only non-expired
@@ -174,8 +174,8 @@ export async function syncDtcToMmt(config: SyncConfig = { dryRun: false, batchSi
       select: { id: true, dtcListingId: true, status: true },
     });
     
-    const existingDtcIds = new Set(existingShadows.map(s => s.dtcListingId));
-    const dtcIdsToSync = new Set(dtcListings.map(l => l.id));
+    const existingDtcIds = new Set(existingShadows.map((s: { dtcListingId: string | null }) => s.dtcListingId ?? "").filter((id) => id.length > 0));
+    const dtcIdsToSync = new Set(dtcListings.map((l: { id: string }) => l.id));
     
     // Step 3: Upsert — insert new, update changed
     for (const dtcListing of dtcListings.slice(0, config.batchSize)) {
@@ -208,9 +208,9 @@ export async function syncDtcToMmt(config: SyncConfig = { dryRun: false, batchSi
     
     // Step 4: Withdraw shadows for DTC listings that are no longer ACTIVE
     const withdrawnIds = existingShadows
-      .filter(s => !dtcIdsToSync.has(s.dtcListingId))
-      .map(s => s.dtcListingId)
-      .filter(Boolean) as string[];
+      .filter((s: { dtcListingId: string | null }) => s.dtcListingId !== null && !dtcIdsToSync.has(s.dtcListingId))
+      .map((s: { dtcListingId: string | null }) => s.dtcListingId)
+      .filter((id: string | null): id is string => id !== null) as string[];
     
     if (withdrawnIds.length > 0) {
       await mmt.listing.updateMany({

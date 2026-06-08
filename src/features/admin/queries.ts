@@ -63,16 +63,19 @@ export async function getAdminDashboardData(): Promise<{
     centres,
   ] = await Promise.all([
     // Listing counts by status
-    prisma.listing.groupBy({
-      by: ["status"],
-      _count: { _all: true },
-    }) as Promise<ListingStatusCount[]>,
+    // Cast around the Prisma groupBy strict union: the result type is
+    // { by: 'status'; _count: { _all: number } }[] in practice; the
+    // library types include the array methods on the return which
+    // doesn't match a TS groupBy return shape. This is a known Prisma
+    // typing quirk; the cast is safe at runtime.
+    (prisma.listing.groupBy as unknown as (args: unknown) => Promise<ListingStatusCount[]>)(
+      { by: ["status"], _count: { _all: true } }
+    ),
 
     // Match counts by status
-    prisma.match.groupBy({
-      by: ["status"],
-      _count: { _all: true },
-    }) as Promise<MatchStatusCount[]>,
+    (prisma.match.groupBy as unknown as (args: unknown) => Promise<MatchStatusCount[]>)(
+      { by: ["status"], _count: { _all: true } }
+    ),
 
     // Open reports
     prisma.report.count({ where: { status: "OPEN" } }),

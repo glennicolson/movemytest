@@ -1,5 +1,5 @@
 import type { AuthDeliveryPackage } from "@/lib/auth/delivery";
-import type { AuthTokenPurpose } from "@/lib/auth/tokens";
+import type { AuthTokenPurpose } from "@/lib/auth/token-types";
 import { PostmarkAuthDeliveryTransport } from "@/lib/auth/transports/postmark";
 
 export type AuthDeliveryTransportProvider = "manual" | "postmark";

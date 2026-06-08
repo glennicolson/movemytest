@@ -101,7 +101,7 @@ export async function adminReplyToReportAction(formData: FormData) {
     prisma.reportResponse.create({
       data: {
         reportId,
-        authorUserId: user.userId,
+        authorAccountId: user.userId,
         message: parsed.data.message,
         channel: parsed.data.channel,
       },
@@ -182,7 +182,6 @@ export async function adminCloseReportAction(formData: FormData) {
       data: {
         status: "RESOLVED",
         closedAt: new Date(),
-        closedByUserId: user.userId,
         closedReason: reason || null,
         updatedAt: new Date(),
       },

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { getNavigation } from "@/features/marketing-content/queries";
+import { FOOTER_NAV_SECTIONS } from "./nav-data";
 import { CookiePreferencesLink } from "@/components/marketing/cookie-preferences-link";
 import { TrackedLink } from "@/components/marketing/tracked-link";
 import { ObfuscatedEmail } from "@/components/marketing/obfuscated-email";
@@ -67,14 +67,15 @@ function XIcon() {
 }
 
 export async function SiteFooter() {
-  const footerNavItems = await getNavigation("FOOTER");
-
-// Group footer nav: top-level items become section headers, children become links
-  const sections = footerNavItems.map((parent: any) => ({
-    title: parent.label,
-    links: parent.children.length
-      ? parent.children.map((child: any) => ({ title: child.label, href: child.href, openInNewTab: child.openInNewTab }))
-      : [{ title: parent.label, href: parent.href, openInNewTab: parent.openInNewTab }],
+  // Footer nav is now hardcoded — see nav-data.ts.
+  // Each section's links are flat (no children).
+  const sections = FOOTER_NAV_SECTIONS.map((section) => ({
+    title: section.title,
+    links: section.links.map((link) => ({
+      title: link.label,
+      href: link.href,
+      openInNewTab: link.openInNewTab,
+    })),
   }));
 
   return (

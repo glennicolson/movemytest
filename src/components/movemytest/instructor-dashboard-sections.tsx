@@ -5,7 +5,6 @@ import { MoveMyTestInstructorDashboardCalendar } from "@/components/movemytest/m
 import { LearnerCardsList } from "@/components/movemytest/learner-cards-list";
 import { DIRECTION_LABELS, TIME_PREFERENCE_LABELS } from "@/features/movemytest/constants";
 import { recordMoveMyTestInstructorAvailabilityAction, updateMoveMyTestInstructorProfileAction } from "@/features/movemytest/instructor-actions";
-import { getCalendarEvents } from "@/features/calendar/queries";
 import type { CalendarEvent } from "@/features/calendar/queries";
 
 function formatDateTime(value: Date | string | null | undefined) {

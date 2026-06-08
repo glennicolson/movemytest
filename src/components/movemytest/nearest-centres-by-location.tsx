@@ -8,7 +8,8 @@ type CentreWithCoords = {
   id: string;
   slug: string;
   displayName: string;
-  region: string;
+  // MMT TestCentre has region as nullable; tolerated by the UI.
+  region: string | null;
   postcode: string | null;
   latitude: number | null;
   longitude: number | null;

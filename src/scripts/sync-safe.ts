@@ -122,12 +122,25 @@ export async function runSafeSync(config: SyncConfig): Promise<{ success: boolea
         updatedAt: new Date(),
       };
 
-      // Upsert into target DB (our own database)
-      await targetPrisma.listing.upsert({
-        where: { dtcListingId: mapped.dtcListingId ?? "" },
-        update: mapped,
-        create: { ...mapped, id: undefined }, // Let Prisma generate new ID
+      // The MMT Listing schema has dtcListingId as nullable and
+      // non-unique (just indexed). Upsert on it doesn't work — use
+      // findFirst + update OR create instead.
+      const existing = await targetPrisma.listing.findFirst({
+        where: { dtcListingId: mapped.dtcListingId ?? "__none__" },
       });
+      if (existing) {
+        await targetPrisma.listing.update({
+          where: { id: existing.id },
+          data: mapped as Parameters<typeof targetPrisma.listing.update>[0]["data"],
+        });
+      } else {
+        // Cast to the create-input shape; the transform function
+        // produces a compatible shape (currentCentreId etc are all
+        // the right fields). We strip `id` so Prisma generates a new one.
+        await targetPrisma.listing.create({
+          data: mapped as unknown as Parameters<typeof targetPrisma.listing.create>[0]["data"],
+        });
+      }
     }
 
     console.log(`[Sync] Successfully synced ${(sourceListings as any[]).length} listings`);

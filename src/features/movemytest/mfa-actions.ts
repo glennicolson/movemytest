@@ -55,10 +55,10 @@ export async function confirmMoveMyTestTotpSetupAction(_prevState: MfaVerifyActi
 
   const backupCodes = generateBackupCodes();
   await prisma.$transaction(async (tx) => {
-    await tx.movemytestLearnerMfaFactor.updateMany({ where: { accountId: session.accountId, method: "TOTP", status: "ACTIVE" }, data: { isPrimary: false } });
-    await tx.movemytestLearnerMfaFactor.update({ where: { id: pendingFactor.id }, data: { status: "ACTIVE", isPrimary: true, activatedAt: new Date() } });
-    await tx.movemytestLearnerBackupCode.deleteMany({ where: { accountId: session.accountId } });
-    await tx.movemytestLearnerBackupCode.createMany({ data: backupCodes.map((code) => ({ accountId: session.accountId, codeHash: hashBackupCode(code) })) });
+    await tx.learnerMfaFactor.updateMany({ where: { accountId: session.accountId, method: "TOTP", status: "ACTIVE" }, data: { isPrimary: false } });
+    await tx.learnerMfaFactor.update({ where: { id: pendingFactor.id }, data: { status: "ACTIVE", isPrimary: true, activatedAt: new Date() } });
+    await tx.learnerBackupCode.deleteMany({ where: { accountId: session.accountId } });
+    await tx.learnerBackupCode.createMany({ data: backupCodes.map((code) => ({ accountId: session.accountId, codeHash: hashBackupCode(code) })) });
   });
 
   return { status: "success", message: "TOTP MFA is now active. Save these backup codes somewhere safe before you leave this page.", backupCodes, hasActiveTotp: true, activeFactorLabel: pendingFactor.label };
@@ -75,8 +75,8 @@ export async function regenerateMoveMyTestBackupCodesAction(_prevState: MfaSetup
 
   const backupCodes = generateBackupCodes();
   await prisma.$transaction(async (tx) => {
-    await tx.movemytestLearnerBackupCode.deleteMany({ where: { accountId: session.accountId } });
-    await tx.movemytestLearnerBackupCode.createMany({ data: backupCodes.map((code) => ({ accountId: session.accountId, codeHash: hashBackupCode(code) })) });
+    await tx.learnerBackupCode.deleteMany({ where: { accountId: session.accountId } });
+    await tx.learnerBackupCode.createMany({ data: backupCodes.map((code) => ({ accountId: session.accountId, codeHash: hashBackupCode(code) })) });
   });
 
   return { status: "success", message: "Backup codes regenerated. Replace any copies you stored before.", backupCodes, hasActiveTotp: true, activeFactorLabel: activeFactor.label };
@@ -92,8 +92,8 @@ export async function disableMoveMyTestTotpAction(_prevState: MfaSetupActionStat
   if (!activeFactor) return { status: "error", message: "No active TOTP factor to disable.", hasActiveTotp: false };
 
   await prisma.$transaction(async (tx) => {
-    await tx.movemytestLearnerMfaFactor.update({ where: { id: activeFactor.id }, data: { status: "DISABLED", isPrimary: false } });
-    await tx.movemytestLearnerBackupCode.deleteMany({ where: { accountId: session.accountId } });
+    await tx.learnerMfaFactor.update({ where: { id: activeFactor.id }, data: { status: "DISABLED", isPrimary: false } });
+    await tx.learnerBackupCode.deleteMany({ where: { accountId: session.accountId } });
   });
 
   return { status: "success", message: "TOTP MFA has been disabled. Your MoveMyTest account now uses password-only sign-in.", hasActiveTotp: false };

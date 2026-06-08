@@ -15,6 +15,9 @@ datasource db {
 model LearnerAccount {
   id                            String                           @id @default(cuid())
   email                         String                           @unique
+  // Bridge to DTC: the DTC User.id this MMT account was created from.
+  // NULL for accounts that originated on MMT (not via the DTC launch link).
+  crmUserId                     String?                          @unique
   passwordHash                  String
   mobileNumber                  String?
   status                        AccountStatus                    @default(ACTIVE)
@@ -83,6 +86,10 @@ model LearnerBackupCode {
 model LearnerInvite {
   id                           String     @id @default(cuid())
   invitedByInstructorAccountId String?
+  // Bridge to DTC: the DTC User.id who issued this invite (when invite comes from the CRM bridge)
+  invitedByUserId                String?
+  // Also the DTC InstructorProfile.id (for cross-referencing)
+  invitedByInstructorProfileId    String?
   claimedByAccountId           String?
   learnerName                  String?
   email                        String
@@ -186,6 +193,9 @@ model Listing {
 model InstructorAccount {
   id                         String                   @id @default(cuid())
   adiNumber                  String                   @unique
+  // Bridge to DTC: the DTC InstructorProfile.id this MMT instructor account
+  // was created from. NULL for instructors who registered on MMT directly.
+  crmInstructorProfileId         String?                          @unique
   firstName                  String
   lastName                   String
   email                      String                   @unique

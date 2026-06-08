@@ -1,5 +1,5 @@
 import { appConfig } from "@/lib/config/app";
-import type { AuthTokenPurpose } from "@/lib/auth/tokens";
+import type { AuthTokenPurpose } from "@/lib/auth/token-types";
 
 export type AuthDeliveryRecipient = {
   firstName: string;
