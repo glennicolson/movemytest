@@ -47,7 +47,7 @@ Multiple fixes landed in this session. Verified on live by Glen where applicable
 
 
 ### Resolved today (2026-06-08 17:57 BST)
-- [x] MMT SMS-on-match bug — verified end-to-end on live. Glen confirmed both parties received the  SMS after the deploy of . 3-commit chain (4ee5e61 → 863d1f4 → 8eceb69).
+- [x] MMT SMS-on-match bug — verified end-to-end on live. Glen confirmed both parties received the `MATCH_FOUND` SMS after the deploy of `8eceb69`. 3-commit chain (4ee5e61 → 863d1f4 → 8eceb69).
 
 ### Still pending (Next Up)
 - [ ] `/dashboard/edit` status-blind page (same shape of bug, allows editing a COMPLETED listing)
