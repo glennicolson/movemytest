@@ -34,6 +34,7 @@ Multiple fixes landed in this session. Verified on live by Glen where applicable
 - [x] 17:11 BST — Diagnosed: `actions.ts:98-100` and `:551-552` queue SMS but never drain it
 - [x] 17:14 BST — 17 of 20 stale SmsQueue rows marked `SKIPPED` via `scripts/skip-stale-sms-queue.mjs`
 - [x] 17:20 BST — **FIX COMMITTED + PUSHED** in commit `4ee5e61` on MMT main (verified via `git ls-remote`). tsc + build clean. Awaiting live deploy.
+- [x] 17:57 BST — **RESOLVED ON LIVE** by Glen: SMS confirmed working end-to-end on movemytest.co.uk after deploy of 8eceb69.
 - [ ] Update the "lazy processing" comment at `sms-queue.ts:5-9` — either remove it or actually wire a hook to drain the queue on dashboard loads
 - [ ] Glen to decide on 3 PENDING `SWAP_COMPLETED_CONFIRMATION` rows for already-COMPLETED matches (drain / skip / leave)
 
@@ -41,8 +42,12 @@ Multiple fixes landed in this session. Verified on live by Glen where applicable
 ### Defensive SELECT against bad updatedAt (FIXED in 863d1f4)
 - [x] 17:32 BST — Glen reported live error: "column updatedAt contained an invalid datetime value"
 - [x] 17:38 BST — Fix committed: 5 SELECTs across sms-queue.ts and email-queue.ts now use explicit column list + WHERE updatedAt > '1970-01-01'
-- [ ] Glen: confirm SMS now goes through on the new match (Hostinger deploy needed)
-- [ ] One-shot SQL to mark the 3 PENDING SWAP_COMPLETED_CONFIRMATION rows as SKIPPED (they are now permanently bypassed by the new filter)
+- [x] 17:57 BST — Glen confirmed SMS reaches both parties on the new match (live deploy of 8eceb69)
+- [ ] One-shot SQL to mark the 3 PENDING SWAP_COMPLETED_CONFIRMATION rows as SKIPPED — they are no longer permanently bypassed; the live cleanup SQL + defensive filter make them deliver-eligible. Glen's call: drain (sends 3 real SMS, 25h late) / skip / leave
+
+
+### Resolved today (2026-06-08 17:57 BST)
+- [x] MMT SMS-on-match bug — verified end-to-end on live. Glen confirmed both parties received the  SMS after the deploy of . 3-commit chain (4ee5e61 → 863d1f4 → 8eceb69).
 
 ### Still pending (Next Up)
 - [ ] `/dashboard/edit` status-blind page (same shape of bug, allows editing a COMPLETED listing)
