@@ -18,8 +18,19 @@
  * converted (verified against the live site HTML on 2026-06-08):
  *  - Header: Home, Start Listing, Test Centres, How it Works, For Instructors, Support Us
  *  - Footer: Legal section + Contact section
+ *
+ * HISTORY: this file used to import `NavItem` from
+ * `./site-header-client`, but that client component was unused
+ * dead code in the MMT app (MMT uses `@/components/movemytest/site-header`,
+ * not the marketing one). The type was inlined here on 2026-06-08
+ * so the footer can keep working without pulling in a 200KB
+ * framer-motion dep.
  */
-import type { NavItem } from "./site-header-client";
+
+export interface NavItem {
+  title: string;
+  href: string;
+}
 
 export const HEADER_NAV_ITEMS: NavItem[] = [
   { title: "Home", href: "/" },
@@ -48,8 +59,6 @@ export const FOOTER_NAV_SECTIONS: FooterSection[] = [
     title: "Contact",
     links: [
       { label: "About", href: "/about" },
-      { label: "Contact", href: "/contact" },
-      { label: "Help Centre", href: "/help" },
     ],
   },
 ];

@@ -63,3 +63,4 @@ Network Trash Folder
 Temporary Items
 .apdisk
 pnpm-lock.yaml  # stale from prior pnpm experiment; MMT uses npm
+tsconfig.tsbuildinfo
