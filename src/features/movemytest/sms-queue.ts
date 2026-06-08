@@ -53,7 +53,12 @@ function smsBodyForKind(
   swapContext?: { fromCentre: string; fromDateTime: string; toCentre: string; toDateTime: string; matchId?: string },
 ): string {
   const matchId = swapContext?.matchId ?? "";
-  const shortUrl = `https://movemytest.co.uk/m/${matchId}`;
+  // Fall back to the learner dashboard if the matchId is somehow missing
+  // (e.g. cross-platform shadow match where one side has no account record).
+  // Better to send the learner to their dashboard than a broken URL.
+  const shortUrl = matchId
+    ? `https://movemytest.co.uk/matches/${matchId}`
+    : `https://movemytest.co.uk/dashboard`;
 
   switch (kind) {
     case "MATCH_FOUND":
