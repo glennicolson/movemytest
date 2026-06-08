@@ -33,7 +33,7 @@ Multiple fixes landed in this session. Verified on live by Glen where applicable
 ### SMS-on-match bug (HIGH, fix needed)
 - [x] 17:11 BST — Diagnosed: `actions.ts:98-100` and `:551-552` queue SMS but never drain it
 - [x] 17:14 BST — 17 of 20 stale SmsQueue rows marked `SKIPPED` via `scripts/skip-stale-sms-queue.mjs`
-- [ ] **APPLY THE FIX**: add `await sendQueuedSmsAction(newMatch.id)` and `await sendQueuedSmsAction(match.id)` next to the email calls (~3 lines)
+- [x] 17:20 BST — **FIX COMMITTED + PUSHED** in commit `4ee5e61` on MMT main (verified via `git ls-remote`). tsc + build clean. Awaiting live deploy.
 - [ ] Update the "lazy processing" comment at `sms-queue.ts:5-9` — either remove it or actually wire a hook to drain the queue on dashboard loads
 - [ ] Glen to decide on 3 PENDING `SWAP_COMPLETED_CONFIRMATION` rows for already-COMPLETED matches (drain / skip / leave)
 
