@@ -46,11 +46,14 @@ export default async function DashboardSupportUsPage({ searchParams }: PageProps
         </div>
 
         <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
-          <div style={{ backgroundColor: '#ff0000', borderRadius: '9999px', padding: '12px 24px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '8px', boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)', cursor: 'pointer' }}
-            onClick={() => window.open(PAYPAL_DONATE_URL, '_blank')}
+          <a
+            href={PAYPAL_DONATE_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center justify-center rounded-full bg-[var(--brand)] px-6 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-[var(--brand-strong)]"
           >
-            <span style={{ color: '#00ff00', fontSize: '14px', fontWeight: 600, fontFamily: 'inherit' }}>CLICK ME - BUY COFFEE</span>
-          </div>
+            <Coffee className="mr-2 h-4 w-4" /> Buy us a coffee
+          </a>
           <Link
             href="/dashboard"
             className="inline-flex items-center justify-center rounded-full border border-slate-300 bg-white px-6 py-3 text-sm font-semibold text-slate-950 transition hover:border-[var(--brand)] hover:text-[var(--brand-strong)]"
