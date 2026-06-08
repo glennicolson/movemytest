@@ -79,45 +79,147 @@ export default async function WhatToExpectPage() {
 
   return (
     <div className="space-y-8">
-      {/* Confirmation */}
-      <section className="rounded-3xl border border-emerald-200 bg-emerald-50 p-6 shadow-sm">
-        <div className="flex items-start gap-3">
-          <CheckCircle2 className="mt-0.5 h-6 w-6 shrink-0 text-emerald-600" />
-          <div>
-            <h2 className="text-xl font-semibold text-emerald-950">Your listing is live</h2>
-            <p className="mt-1 text-sm leading-6 text-emerald-900">
-              Your test swap listing for{" "}
-              <strong>{listing?.currentCentre?.name}</strong>{" "}
-              on{" "}
-              <strong>
-                {listing?.currentDateTime?.toLocaleDateString("en-GB", {
-                  dateStyle: "medium",
-                  timeZone: "UTC",
-                })}
-              </strong>{" "}
-              has been created successfully.
-            </p>
-            <p className="mt-3 text-sm leading-6 text-emerald-900">
-              You can edit your listing at any time from the Overview page. MoveMyTest will email you when a compatible match is found.
-            </p>
-            <div className="mt-4 flex flex-wrap gap-3">
-              <Link
-                href="/dashboard"
-                className="dashboard-button inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold shadow-sm transition"
-              >
-                Go to Overview
-                <ArrowRight className="h-4 w-4" />
-              </Link>
-              <Link
-                href="/dashboard/edit"
-                className="edit-listing-button inline-flex items-center gap-2 rounded-full border border-slate-300 bg-white px-5 py-2.5 text-sm font-semibold text-slate-950 transition hover:border-[var(--brand)]"
-              >
-                Edit my listing
-              </Link>
-            </div>
-          </div>
-        </div>
-      </section>
+      {/* Status banner — copy and color depend on the listing's current state.
+          Previously this was hardcoded to "Your listing is live" for any
+          non-null listing, which produced a confusing mismatch with the
+          /dashboard overview showing the same listing as COMPLETED. */}
+      {(() => {
+        if (!listing) return null;
+        const status = listing.status;
+        const centre = listing.currentCentre?.name;
+        const dateStr = listing.currentDateTime?.toLocaleDateString("en-GB", {
+          dateStyle: "medium",
+          timeZone: "UTC",
+        });
+
+        if (status === "ACTIVE") {
+          return (
+            <section className="rounded-3xl border border-emerald-200 bg-emerald-50 p-6 shadow-sm">
+              <div className="flex items-start gap-3">
+                <CheckCircle2 className="mt-0.5 h-6 w-6 shrink-0 text-emerald-600" />
+                <div>
+                  <h2 className="text-xl font-semibold text-emerald-950">Your listing is live</h2>
+                  <p className="mt-1 text-sm leading-6 text-emerald-900">
+                    Your test swap listing for <strong>{centre}</strong> on <strong>{dateStr}</strong> has been created successfully.
+                  </p>
+                  <p className="mt-3 text-sm leading-6 text-emerald-900">
+                    You can edit your listing at any time from the Overview page. MoveMyTest will email you when a compatible match is found.
+                  </p>
+                  <div className="mt-4 flex flex-wrap gap-3">
+                    <Link href="/dashboard" className="dashboard-button inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold shadow-sm transition">
+                      Go to Overview <ArrowRight className="h-4 w-4" />
+                    </Link>
+                    <Link href="/dashboard/edit" className="edit-listing-button inline-flex items-center gap-2 rounded-full border border-slate-300 bg-white px-5 py-2.5 text-sm font-semibold text-slate-950 transition hover:border-[var(--brand)]">
+                      Edit my listing
+                    </Link>
+                  </div>
+                </div>
+              </div>
+            </section>
+          );
+        }
+
+        if (status === "PAUSED") {
+          return (
+            <section className="rounded-3xl border border-amber-200 bg-amber-50 p-6 shadow-sm">
+              <div className="flex items-start gap-3">
+                <CheckCircle2 className="mt-0.5 h-6 w-6 shrink-0 text-amber-600" />
+                <div>
+                  <h2 className="text-xl font-semibold text-amber-950">Your listing is paused</h2>
+                  <p className="mt-1 text-sm leading-6 text-amber-900">
+                    Your test swap listing for <strong>{centre}</strong> on <strong>{dateStr}</strong> is currently paused and not being matched.
+                  </p>
+                  <p className="mt-3 text-sm leading-6 text-amber-900">
+                    Reactivate it from the Overview page when you're ready to look for matches again.
+                  </p>
+                  <div className="mt-4 flex flex-wrap gap-3">
+                    <Link href="/dashboard" className="dashboard-button inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold shadow-sm transition">
+                      Go to Overview <ArrowRight className="h-4 w-4" />
+                    </Link>
+                  </div>
+                </div>
+              </div>
+            </section>
+          );
+        }
+
+        if (status === "MATCHED") {
+          return (
+            <section className="rounded-3xl border border-blue-200 bg-blue-50 p-6 shadow-sm">
+              <div className="flex items-start gap-3">
+                <CheckCircle2 className="mt-0.5 h-6 w-6 shrink-0 text-blue-600" />
+                <div>
+                  <h2 className="text-xl font-semibold text-blue-950">You have an active match</h2>
+                  <p className="mt-1 text-sm leading-6 text-blue-900">
+                    Your listing for <strong>{centre}</strong> on <strong>{dateStr}</strong> has been matched with another learner.
+                  </p>
+                  <p className="mt-3 text-sm leading-6 text-blue-900">
+                    Review the match details on the My Match page and follow the steps to complete your swap with DVSA.
+                  </p>
+                  <div className="mt-4 flex flex-wrap gap-3">
+                    <Link href="/dashboard/matches" className="dashboard-button inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold shadow-sm transition">
+                      Open My Match <ArrowRight className="h-4 w-4" />
+                    </Link>
+                  </div>
+                </div>
+              </div>
+            </section>
+          );
+        }
+
+        if (status === "COMPLETED") {
+          return (
+            <section className="rounded-3xl border border-slate-200 bg-slate-50 p-6 shadow-sm">
+              <div className="flex items-start gap-3">
+                <CheckCircle2 className="mt-0.5 h-6 w-6 shrink-0 text-slate-500" />
+                <div>
+                  <h2 className="text-xl font-semibold text-slate-900">Your last swap is complete</h2>
+                  <p className="mt-1 text-sm leading-6 text-slate-700">
+                    Your test swap listing for <strong>{centre}</strong> on <strong>{dateStr}</strong> has been completed.
+                  </p>
+                  <p className="mt-3 text-sm leading-6 text-slate-700">
+                    If you have a new DVSA test booking, you can add a new listing. Your completed listing stays in your swap history.
+                  </p>
+                  <div className="mt-4 flex flex-wrap gap-3">
+                    <Link href="/dashboard" className="dashboard-button inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold shadow-sm transition">
+                      Go to Overview <ArrowRight className="h-4 w-4" />
+                    </Link>
+                    <Link href="/dashboard/edit" className="edit-listing-button inline-flex items-center gap-2 rounded-full border border-slate-300 bg-white px-5 py-2.5 text-sm font-semibold text-slate-950 transition hover:border-[var(--brand)]">
+                      Add a new listing
+                    </Link>
+                  </div>
+                </div>
+              </div>
+            </section>
+          );
+        }
+
+        if (status === "EXPIRED") {
+          return (
+            <section className="rounded-3xl border border-amber-200 bg-amber-50 p-6 shadow-sm">
+              <div className="flex items-start gap-3">
+                <CheckCircle2 className="mt-0.5 h-6 w-6 shrink-0 text-amber-600" />
+                <div>
+                  <h2 className="text-xl font-semibold text-amber-950">Your listing has expired</h2>
+                  <p className="mt-1 text-sm leading-6 text-amber-900">
+                    Your test date has passed. Your listing for <strong>{centre}</strong> on <strong>{dateStr}</strong> is no longer being matched.
+                  </p>
+                  <p className="mt-3 text-sm leading-6 text-amber-900">
+                    If you have a new DVSA test booking, you can add a new listing.
+                  </p>
+                  <div className="mt-4 flex flex-wrap gap-3">
+                    <Link href="/dashboard/edit" className="dashboard-button inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold shadow-sm transition">
+                      Add a new listing <ArrowRight className="h-4 w-4" />
+                    </Link>
+                  </div>
+                </div>
+              </div>
+            </section>
+          );
+        }
+
+        return null; // DELETED or unknown — no banner
+      })()}
 
       {/* Process Overview */}
       <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
