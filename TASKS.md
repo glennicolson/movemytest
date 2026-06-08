@@ -37,6 +37,13 @@ Multiple fixes landed in this session. Verified on live by Glen where applicable
 - [ ] Update the "lazy processing" comment at `sms-queue.ts:5-9` — either remove it or actually wire a hook to drain the queue on dashboard loads
 - [ ] Glen to decide on 3 PENDING `SWAP_COMPLETED_CONFIRMATION` rows for already-COMPLETED matches (drain / skip / leave)
 
+
+### Defensive SELECT against bad updatedAt (FIXED in 863d1f4)
+- [x] 17:32 BST — Glen reported live error: "column updatedAt contained an invalid datetime value"
+- [x] 17:38 BST — Fix committed: 5 SELECTs across sms-queue.ts and email-queue.ts now use explicit column list + WHERE updatedAt > '1970-01-01'
+- [ ] Glen: confirm SMS now goes through on the new match (Hostinger deploy needed)
+- [ ] One-shot SQL to mark the 3 PENDING SWAP_COMPLETED_CONFIRMATION rows as SKIPPED (they are now permanently bypassed by the new filter)
+
 ### Still pending (Next Up)
 - [ ] `/dashboard/edit` status-blind page (same shape of bug, allows editing a COMPLETED listing)
 - [ ] Pre-push schema check tool — 4 drift recurrences today would have been caught by this
